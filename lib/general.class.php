@@ -9,6 +9,7 @@
 * @version 1.3
 */
 
+error_reporting(E_ALL ^ E_NOTICE);
 
 if (Defined('HOME_NETWORK') && HOME_NETWORK!='' && !$argv[0] && 
     !preg_match('/\/gps\.php/is', $_SERVER['REQUEST_URI']) &&
