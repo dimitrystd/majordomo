@@ -32,20 +32,20 @@ function objects() {
 * @access public
 */
 function saveParams($data=1) {
- $p=array();
+ $data=array();
  if (IsSet($this->id)) {
-  $p["id"]=$this->id;
+  $data["id"]=$this->id;
  }
  if (IsSet($this->view_mode)) {
-  $p["view_mode"]=$this->view_mode;
+  $data["view_mode"]=$this->view_mode;
  }
  if (IsSet($this->edit_mode)) {
-  $p["edit_mode"]=$this->edit_mode;
+  $data["edit_mode"]=$this->edit_mode;
  }
  if (IsSet($this->tab)) {
-  $p["tab"]=$this->tab;
+  $data["tab"]=$this->tab;
  }
- return parent::saveParams($p);
+ return parent::saveParams($data);
 }
 /**
 * getParams
@@ -586,6 +586,7 @@ curl_close($ch);
     $params['NEW_VALUE']=(string)$value;
     $params['OLD_VALUE']=(string)$old_value;
     $this->callMethod($prop['ONCHANGE'], $params);
+    //unset($property_linked_history[$property][$prop['ONCHANGE']]);
    } elseif ($property_linked_history[$property][$prop['ONCHANGE']]) {
     unset($property_linked_history[$property][$prop['ONCHANGE']]);
    }
