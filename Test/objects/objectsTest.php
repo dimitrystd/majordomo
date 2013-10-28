@@ -9,6 +9,8 @@ include_once(ROOT.'./lib/loader.php');
 
 class objectsTest extends PHPUnit_Framework_TestCase {
 
+    protected $backupGlobalsBlacklist = array('db');
+
     public static function setUpBeforeClass()
     {
         include_once(DIR_MODULES."application.class.php");
@@ -24,8 +26,29 @@ class objectsTest extends PHPUnit_Framework_TestCase {
         $db->Disconnect();
     }
 
+    public function testSetPropertyWithRecursion1()
+    {
+        $obj=getObject('Unittest');
+        $this->assertNotEmpty($obj);
+
+        $obj->setProperty('Property1', 'value from test');
+
+        $this->assertEquals('value from test', $obj->getProperty('Property1'));
+    }
+
+    public function testSetPropertyWithRecursion2()
+    {
+        $obj=getObject('Unittest');
+        $this->assertNotEmpty($obj);
+
+        $obj->setProperty('Property2', 'value from test');
+
+        $this->assertEquals('value from test', $obj->getProperty('Property2'));
+    }
+
     public function testSetPropertyWithOnChangeMethod()
     {
+        $this->markTestIncomplete();
         $obj=getObject('IPSensor1');
         $this->assertNotEmpty($obj);
 
