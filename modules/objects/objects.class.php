@@ -586,11 +586,8 @@ curl_close($ch);
     $params['NEW_VALUE']=(string)$value;
     $params['OLD_VALUE']=(string)$old_value;
     $this->callMethod($prop['ONCHANGE'], $params);
-    //unset($property_linked_history[$property][$prop['ONCHANGE']]);
-   } elseif ($property_linked_history[$property][$prop['ONCHANGE']]) {
     unset($property_linked_history[$property][$prop['ONCHANGE']]);
    }
-
 
   }
 
