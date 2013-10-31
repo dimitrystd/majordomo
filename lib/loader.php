@@ -11,6 +11,7 @@
 * @modified 01-Jan-2004
 */
 
+error_reporting(E_ALL ^ E_NOTICE);
 
  Define("THIS_URL", $_SERVER['REQUEST_URI']);
 // liblary modules loader
