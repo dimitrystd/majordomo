@@ -1,5 +1,5 @@
 <?php
-
+exit;
 chdir(dirname(__FILE__).'/../');
 
 include_once("./config.php");
