@@ -387,7 +387,10 @@ function DebMes ($text)
    {
       mkdir(ROOT.'debmes');
    }
- 
+
+   $log = Logger::getLogger(__METHOD__);
+   $log->debug($text);
+   /*
    $today_file = ROOT . 'debmes/' . date('Ymd') . '.txt';
    $f = fopen($today_file, "a+");
  
@@ -398,6 +401,7 @@ function DebMes ($text)
       fclose($f);
       @chmod($today_file, 0666);  
    }
+   */
 }
 
 // ---------------------------------------------------------
