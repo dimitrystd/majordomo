@@ -371,7 +371,16 @@ curl_close($ch);
      }
     }
 
-    eval($code);
+
+                  try {
+                   $success=eval($code);
+                   if ($success===false) {
+                    DebMes("Error in method code: ".$code);
+                   }
+                  } catch(Exception $e){
+                   DebMes('Error: exception '.get_class($e).', '.$e->getMessage().'.');
+                  }
+
    }
 
    if ($method['OBJECT_ID'] && $method['CALL_PARENT']==2) {
