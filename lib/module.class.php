@@ -40,6 +40,14 @@ Define("EQ_DELIMITER", "qz_");
 * @var string module name
 */
   var $name;
+   /**
+    * @var string module title
+    */
+   public $title;
+   /**
+    * @var string module category
+    */
+   public $module_category;
 /**
 * @var array module output data
 */

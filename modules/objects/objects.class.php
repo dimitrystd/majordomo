@@ -11,6 +11,12 @@
 //
 //
 class objects extends module {
+  public $id;
+  public $object_title;
+  public $class_id;
+  public $description;
+  public $location_id;
+
 /**
 * objects
 *

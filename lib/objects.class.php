@@ -25,12 +25,14 @@
 
 
 /**
-* Title
-*
-* Description
-*
-* @access public
-*/
+ * Title
+ *
+ * Description
+ *
+ * @access public
+ * @param $class_name
+ * @return array|int
+ */
  function getObjectsByClass($class_name) {
   $class_record=SQLSelectOne("SELECT ID FROM classes WHERE TITLE LIKE '".DBSafe(trim($class_name))."'");
   if (!$class_record['ID']) {
