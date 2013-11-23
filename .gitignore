@@ -7,4 +7,5 @@ debmes/*.txt
 reboot
 vendor
 backup
+phpmyadmin4
 *.log
