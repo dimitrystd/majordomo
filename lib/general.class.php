@@ -377,31 +377,36 @@ function setLocalTime($now_date, $diff=0) {
 }
 
 // ---------------------------------------------------------
-function DebMes ($text) 
+/**
+ * @param $text
+ */
+function DebMes($text)
 {
-   //if (ENVIRONMENT != "dev")
-   //   return;
-   
-   // DEBUG MESSAGE LOG
-   if (!is_dir(ROOT.'debmes')) 
-   {
-      mkdir(ROOT.'debmes');
-   }
+  // DEBUG MESSAGE LOG
+  if (!is_dir(ROOT . 'debmes')) {
+    mkdir(ROOT . 'debmes');
+  }
 
-   $log = Logger::getLogger(__METHOD__);
-   $log->debug($text);
-   /*
-   $today_file = ROOT . 'debmes/' . date('Ymd') . '.txt';
-   $f = fopen($today_file, "a+");
- 
-   if ($f) 
-   {
-      fputs($f, date("d.m.Y H:i:s"));
-      fputs($f, "\n$text\n");
-      fclose($f);
-      @chmod($today_file, 0666);  
-   }
-   */
+  $log = Logger::getRootLogger();
+  $log->debug($text);
+}
+
+/**
+ * @param $context
+ * @return Logger
+ */
+function getLogger($context = null)
+{
+  if (empty($context))
+    return Logger::getRootLogger();
+  elseif (is_string($context))
+    return Logger::getLogger($context);
+  elseif (is_a($context, 'objects'))
+    return Logger::getLogger("object.$context->object_title");
+  elseif (is_a($context, 'module'))
+    return Logger::getLogger("module.$context->name");
+  else
+    return Logger::getRootLogger();
 }
 
 // ---------------------------------------------------------
