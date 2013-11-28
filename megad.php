@@ -7,16 +7,16 @@ require_once(ROOT . './lib/loader.php');
 global $db;
 $db = new mysql(DB_HOST, '', DB_USER, DB_PASSWORD, DB_NAME);
 
-$log = Logger::getLogger("MegaDevice");
+$log = getLogger(__FILE__);
 
 // Try to resolve MegaD object by IP
-$ip = $_SERVER["REMOTE_ADDR"];
-$log->trace("Got message from MegaDevice ($ip)");
+$ip = $_SERVER['REMOTE_ADDR'];
+$log->trace(sprintf('Got message from MegaDevice (%s, pt=%s)', $ip, $params['pt']));
 if (!isset($ip)){
-  $log->error("Cannot determinate remote IP address of megadevice!");
+  $log->error('Cannot determinate remote IP address of megadevice!');
   exit;
 }
-$objects = getObjectsByClass("Megadevice");
+$objects = getObjectsByClass('Megadevice');
 foreach ($objects as $obj) {
   if (trim(getGlobal($obj['TITLE'].'.ipAddress')) == $ip) {
     $megaD = $obj;
@@ -24,7 +24,7 @@ foreach ($objects as $obj) {
   }
 }
 if (!isset($megaD)) {
-  $log->error("Cannot find instance of Megadevice class with ip = " . $ip);
+  $log->error('Cannot find instance of Megadevice class with ip = ' . $ip);
   exit;
 }
 // Try to find Light objects (by device and input port)
