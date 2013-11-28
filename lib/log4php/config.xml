@@ -14,7 +14,7 @@
         <param name="file" value="debmes/%s.log" />
         <param name="datePattern" value="Y-m-d" />
     </appender>
-    <logger name="object" additivity="false">
+    <logger name="class.object" additivity="false">
         <level value="TRACE" />
         <appender_ref ref="objectsFileLog" />
     </logger>

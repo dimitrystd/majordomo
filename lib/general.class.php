@@ -392,19 +392,39 @@ function DebMes($text)
 }
 
 /**
+ * Method returns logger with meaningful name. In this case much easy to enable\disable
+ * logs depending on requirements
  * @param $context
+ * If $context is empty or null, then return root logger
+ * If $context is filename or filepath, then return logger with name 'page.filename'
+ * If $context is string, then return logger with name $context
+ * If $context is object, then depending from object class it returns:
+ *  - 'class.object.objectname'
+ *  - 'class.module.modulename'
+ *  - 'class.objectclass'
+ * Example of usage:
+ *  - $log = getLogger();
+ *  - $log = getLogger('MyLogger');
+ *  - $log = getLogger(__FILE__);
+ *  - $log = getLogger($this);
  * @return Logger
  */
 function getLogger($context = null)
 {
   if (empty($context))
     return Logger::getRootLogger();
-  elseif (is_string($context))
-    return Logger::getLogger($context);
+  elseif (is_string($context)) {
+    if (is_file($context))
+      return Logger::getLogger('page.'.basename($context, '.php'));
+    else
+      return Logger::getLogger($context);
+  }
   elseif (is_a($context, 'objects'))
-    return Logger::getLogger("object.$context->object_title");
+    return Logger::getLogger("class.object.$context->object_title");
   elseif (is_a($context, 'module'))
-    return Logger::getLogger("module.$context->name");
+    return Logger::getLogger("class.module.$context->name");
+  elseif (is_object($context))
+    return Logger::getLogger('class.'.get_class($context));
   else
     return Logger::getRootLogger();
 }
