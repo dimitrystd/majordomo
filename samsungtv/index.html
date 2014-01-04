@@ -1,0 +1,146 @@
+    <html>
+    <head>
+    <meta name = "viewport" content = "initial-scale = 1.0">
+    <title>Samsung Remote</title>
+    </head>
+    <body>
+    <script type="text/javascript" language="javascript">
+       //AJAX source from http://www.captain.at/howto-ajax-form-post-get.php
+      var http_request = false;
+       function makeRequest(url, parameters) {
+          http_request = false;
+          if (window.XMLHttpRequest) { // Mozilla, Safari,...
+             http_request = new XMLHttpRequest();
+             if (http_request.overrideMimeType) {
+                // set type accordingly to anticipated content type
+                http_request.overrideMimeType('text/html');
+             }
+          } else if (window.ActiveXObject) { // IE
+             try {
+                http_request = new ActiveXObject("Msxml2.XMLHTTP");
+             } catch (e) {
+                try {
+                   http_request = new ActiveXObject("Microsoft.XMLHTTP");
+                } catch (e) {}
+             }
+          }
+          if (!http_request) {
+             alert('Cannot create XMLHTTP instance');
+             return false;
+          }
+          http_request.onreadystatechange = alertContents;
+          http_request.open('GET', url + parameters, true);
+          http_request.send(null);
+       }
+
+       function alertContents() {
+          if (http_request.readyState == 4) {
+             if (http_request.status == 200) {
+                result = http_request.responseText;
+             } else {
+                alert('There was a problem with the request.');
+             }
+          }
+       }
+    </script>
+
+    <h1>Samsung Remote</h1>
+    <h3>Currently in Beta!</h3>
+    <br>
+
+    <table border="0" cellpadding="0" cellspacing="1" style="text-align: center;">
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=POWEROFF');">Power</a></td>
+          <td>&nbsp;</td>
+          <td>Backlight</td>
+       </tr>
+       <tr>
+          <td>&nbsp;</td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=SOURCE');">Source</a></td>
+          <td>&nbsp;</td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=1');">1</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=2');">2</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=3');">3</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=4');">4</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=5');">5</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=6');">6</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=7');">7</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=8');">8</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=9');">9</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=TTX_MIX');">TTX/Mix</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=0');">0</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=PRECH');">Pre-Ch</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=VOLUP');">Vol +</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=MUTE');">Mute</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=CHUP');">Prog +</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=VOLDOWN');">Vol -</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=CH_LIST');">Ch List</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=CHDOWN');">Prog -</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=CONTENTS');">Content</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=MENU');">Menu</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=GUIDE');">Guide</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=TOOLS');">Tools<a/></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=UP');">Up</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=INFO');">Info</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=LEFT');">Left</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=ENTER');">Enter</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=RIGHT');">Right</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=RETURN');">Return</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=DOWN');">Down</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=EXIT');">Exit</a></td>
+       </tr>
+       <tr>
+          <td colspan=3>
+          <table width="100%" style="text-align: center;">
+          <td bgcolor="red"><a href="#" style="color: white;" onclick="javascript:makeRequest('samsungremote.php', '?key=RED');">A</a></td>
+          <td bgcolor="green"><a href="#" style="color: white;" onclick="javascript:makeRequest('samsungremote.php', '?key=GREEN');">B</a></td>
+          <td bgcolor="gold"><a href="#" style="color: white;" onclick="javascript:makeRequest('samsungremote.php', '?key=YELLOW');">C</a></td>
+          <td bgcolor="darkblue"><a href="#" style="color: white;" onclick="javascript:makeRequest('samsungremote.php', '?key=CYAN');">D</a></td>
+          </table>
+          </td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=W_LINK');">Media P</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=RSS');">Internet</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=MTS');">Dual</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=AD');">AD<a/></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=PICTURE_SIZE');">P Size</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=CAPTION');">Subt</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=REWIND');">Rew</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=PAUSE');">Pause<a/></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=FF');">FF</a></td>
+       </tr>
+       <tr>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=REC');">Rec</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=PLAY');">Play</a></td>
+          <td><a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=STOP');">Stop</a></td>
+       </tr>
+    </table>
+    <br />
+    <input type="text" name="string" id="string" onKeyUp="javascript:makeRequest('samsungremote.php', '?text=' + encodeURIComponent(document.getElementById('string').value));" />&nbsp;<a href="#" onclick="javascript:makeRequest('samsungremote.php', '?text=' + encodeURIComponent(document.getElementById('string').value));">Send</a><br />
+    <a href="#" onclick="javascript:makeRequest('samsungremote.php', '?key=TV');">Switch to TV</a>
+    </body></html>
