@@ -88,5 +88,5 @@ Define('PROJECT_DOMAIN', $_SERVER['SERVER_NAME']);
 
 /// (Optional)
 //Define('DROPBOX_SHOPPING_LIST', 'c:/data/dropbox/list.txt');  
-
+ const WINDOWS_PHP_PATH = '..\server\php\php.exe';
 ?>

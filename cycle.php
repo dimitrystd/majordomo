@@ -60,7 +60,7 @@ $threads = new Threads;
 
 if (substr(php_uname(), 0, 7) == "Windows") 
 {
-   $threads->phpPath = '..\server\php\php.exe';
+   $threads->phpPath = WINDOWS_PHP_PATH;
 }
 else 
 {
