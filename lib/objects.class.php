@@ -12,7 +12,14 @@
 * @access public
 */
  function getObject($name) {
-  $rec=SQLSelectOne("SELECT * FROM objects WHERE TITLE LIKE '".DBSafe($name)."'");
+  $qry='1';
+  if (preg_match('/^(.+?)\.(.+?)$/', $name, $m)) {
+   $class_name=$m[1];
+   $object_name=$m[2];
+   $rec=SQLSelectOne("SELECT objects.* FROM objects LEFT JOIN classes ON objects.CLASS_ID=classes.ID WHERE objects.TITLE LIKE '".DBSafe($object_name)."' AND classes.TITLE LIKE '".DBSafe($class_name)."'");
+  } else {
+   $rec=SQLSelectOne("SELECT objects.* FROM objects WHERE TITLE LIKE '".DBSafe($name)."'");
+  }
   if ($rec['ID']) {
    include_once(DIR_MODULES.'objects/objects.class.php');
    $obj=new objects();
@@ -75,8 +82,17 @@
 * @access public
 */
  function getGlobal($varname) {
+
+  $value=SQLSelectOne("SELECT VALUE FROM pvalues WHERE PROPERTY_NAME = '".DBSafe($varname)."'");
+  if (isset($value['VALUE'])) {
+   return $value['VALUE'];
+  }
+
   $tmp=explode('.', $varname);
-  if ($tmp[1]) {
+  if ($tmp[2]) {
+   $object_name=$tmp[0].'.'.$tmp[1];
+   $varname=$tmp[2];
+  } elseif ($tmp[1]) {
    $object_name=$tmp[0];
    $varname=$tmp[1];
   } else {
@@ -99,7 +115,10 @@
 */
  function setGlobal($varname, $value, $no_linked=0) {
   $tmp=explode('.', $varname);
-  if ($tmp[1]) {
+  if ($tmp[2]) {
+   $object_name=$tmp[0].'.'.$tmp[1];
+   $varname=$tmp[2];
+  } elseif ($tmp[1]) {
    $object_name=$tmp[0];
    $varname=$tmp[1];
   } else {
@@ -122,7 +141,10 @@
 */
  function callMethod($method_name, $params=0) {
   $tmp=explode('.', $method_name);
-  if ($tmp[1]) {
+  if ($tmp[2]) {
+   $object_name=$tmp[0].'.'.$tmp[1];
+   $varname=$tmp[2];
+  } elseif ($tmp[1]) {
    $object_name=$tmp[0];
    $method_name=$tmp[1];
   } else {
@@ -145,7 +167,8 @@
 * @access public
 */
   function processTitle($title, $object=0) {
-
+   startMeasure('processTitle');
+   startMeasure('processTitle ['.$title.']');
    $title=preg_replace('/%rand%/is', rand(), $title);
    if (preg_match_all('/%([\w\d\.]+?)\.([\w\d\.]+?)%/is', $title, $m)) {
     $total=count($m[0]);
@@ -178,6 +201,8 @@
     $result=$jTempl->result;
     $title=$jTempl->result;
    }
+   endMeasure('processTitle ['.$title.']', 1);
+   endMeasure('processTitle', 1);
    return $title;
   }
 

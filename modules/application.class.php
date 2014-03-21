@@ -48,6 +48,28 @@ function getParams() {
 
    Define('ALTERNATIVE_TEMPLATES', 'templates_alt');
 
+
+   if ($this->action=='ajaxgetglobal') {
+    header ("HTTP/1.0: 200 OK\n");
+    header ('Content-Type: text/html; charset=utf-8');
+    $res['DATA']=getGlobal($_GET['var']);
+    echo json_encode($res);
+    global $db;
+    $db->Disconnect();
+    exit;
+   }
+
+   if ($this->action=='ajaxsetglobal') {
+    header ("HTTP/1.0: 200 OK\n");
+    header ('Content-Type: text/html; charset=utf-8');
+    setGlobal($_GET['var'], $_GET['value']);
+    $res['DATA']='OK';
+    echo json_encode($res);
+    global $db;
+    $db->Disconnect();
+    exit;
+   }
+   
    if ($this->action=='getlatestnote') {
     header ("HTTP/1.0: 200 OK\n");
     header ('Content-Type: text/html; charset=utf-8');
@@ -151,6 +173,10 @@ function getParams() {
     $out['APP_ACTION']=1;
    }
 
+   if ($this->app_action) {
+    $out['APP_ACTION']=1;
+   }
+
 
 
 
@@ -179,6 +205,11 @@ function getParams() {
      $users[$i]['SELECTED']=1;
      $out['USER_TITLE']=$users[$i]['NAME'];
      $out['USER_AVATAR']=$users[$i]['AVATAR'];
+    } elseif (!$session->data['SITE_USERNAME'] && $users[$i]['HOST'] && $users[$i]['HOST']==$_SERVER['REMOTE_ADDR']) {
+     $session->data['SITE_USERNAME']=$users[$i]['USERNAME'];
+     $session->data['SITE_USER_ID']=$users[$i]['ID'];     
+     $out['USER_TITLE']=$users[$i]['NAME'];
+     $out['USER_AVATAR']=$users[$i]['AVATAR'];
     }
     if ($users[$i]['IS_DEFAULT']==1) {
      $out['DEFAULT_USERNAME']=$users[$i]['USERNAME'];
@@ -201,6 +232,14 @@ function getParams() {
       $out['USER_AVATAR']=$users[$i]['AVATAR'];
      }
     }
+   }
+
+   if ($out['USER_TITLE']) {
+    Define('USER_TITLE', $out['USER_TITLE']);
+    Define('USER_AVATAR', $out['USER_AVATAR']);
+   } else {
+    Define('USER_TITLE', '');
+    Define('USER_AVATAR', '');
    }
 
 

@@ -93,14 +93,22 @@
   } else {
    $limit="LIMIT 50";
   }
+  $limit=str_replace('LIMIT LIMIT', 'LIMIT', $limit);
 
   $out['LIMIT']=$this->limit;
 
 
   $res=SQLSelect("SELECT shouts.*, DATE_FORMAT(shouts.ADDED, '%H:%i') as DAT, TO_DAYS(shouts.ADDED) as DT, users.NAME FROM shouts LEFT JOIN users ON shouts.MEMBER_ID=users.ID WHERE $qry ORDER BY shouts.ADDED DESC, ID DESC $limit");
 
+
+//  if ($_GET['reverse']) {
+   $this->reverse=1;
+//  }
+
   if (!$this->reverse) {
    $res=array_reverse($res);
+  } else {
+   $out['REVERSE']=1;
   }
   $txtdata='';
 
@@ -135,6 +143,7 @@
     $txtdata.="".$res[$i]['DAT']." <b>".$res[$i]['NAME']."</b>: ".nl2br($res[$i]['MESSAGE'])."<br>";
    }
    $out['RESULT']=$res;
+   $out['TXT_DATA']=$txtdata;
   } else {
    $txtdata.='No data';
   }

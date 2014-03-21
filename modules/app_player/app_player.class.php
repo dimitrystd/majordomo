@@ -275,6 +275,10 @@ function usual(&$out) {
 
    } elseif ($terminal['PLAYER_TYPE']=='foobar') {
     include(DIR_MODULES.'app_player/foobar.php');
+   } elseif ($terminal['PLAYER_TYPE']=='vlcweb') {
+    include(DIR_MODULES.'app_player/vlcweb.php');
+   } elseif ($terminal['PLAYER_TYPE']=='mpd') {
+    include(DIR_MODULES.'app_player/mpd.php');
    }
 
    // close cURL resource, and free up system resources

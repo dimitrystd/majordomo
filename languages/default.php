@@ -100,6 +100,7 @@ $dictionary=array(
 'MODULE_SECURITY_RULES'=>'Security Rules',
 'MODULE_MQTT'=>'MQTT',
 'MODULE_CONNECT'=>'CONNECT',
+'MODULE_MARKET'=>'Plugins Market',
 
 'SETUP'=>'Setup', // objects/objects_edit_methods.html; 
 
@@ -843,6 +844,24 @@ $dictionary=array(
 'ALLOW_EXCEPT_ABOVE'=>'Always available except selected above',
 
 'INLINE_POSITION'=>'Place in-line with previuos element',
+'SUB_PRELOAD'=>'Preload sub-elements in hidden area',
+
+'RUN_PERIODICALLY'=>'Run periodically',
+'RUN_TIME'=>'Run time',
+'RUN_WEEKDAYS'=>'Weekdays',
+'WEEK_SUN'=>'Sunday',
+'WEEK_MON'=>'Monday',
+'WEEK_TUE'=>'Tuesday',
+'WEEK_WED'=>'Wednesday',
+'WEEK_THU'=>'Thursday',
+'WEEK_FRI'=>'Friday',
+'WEEK_SAT'=>'Saturday',
+
+'PARENT_CONTEXT'=>'Parent context',
+'IS_CONTEXT'=>'is context',
+'TIMEOUT'=>'Timeout',
+'SET_CONTEXT_TIMEOUT'=>'Switch to on timeout',
+'TIMEOUT_CODE'=>'Execute on timeout',
 
 'TEST'=>'test'
 

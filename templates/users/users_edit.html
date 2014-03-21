@@ -94,7 +94,7 @@
  <#LANG_PHOTO#>:
  </td>
  <td>
-  [#if AVATAR!=""#]<img src="/cms/avatars/[#AVATAR#]" border="0" height="50"><br>[#endif#]
+  [#if AVATAR!=""#]<img src="<#ROOTHTML#>cms/avatars/[#AVATAR#]" border="0" height="50"><br>[#endif#]
   <input type="file" name="avatar">
  </td>
 </tr>
@@ -105,6 +105,17 @@
  </td>
  <td>
   <input type="text" name="linked_object" value="[#LINKED_OBJECT#]">
+ </td>
+</tr>
+
+<!-- TITLE (varchar) -->
+<tr>
+ <td align=right>
+ [#if ERR_HOST#]<b><font color="red">[#endif#]
+ <#LANG_HOSTNAME#> (<#LANG_OPTIONAL#>):
+ </td>
+ <td>
+  <input type="text" name="host" value="[#HOST#]">
  </td>
 </tr>
 

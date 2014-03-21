@@ -6,9 +6,10 @@
   <td valign="top" width="20%"[#if VIEW_MODE!="scripts"#] bgcolor="#AAAAAA"[#endif#]><a href="?view_mode=scripts">Scripts</a></td>
   <td valign="top" width="20%"[#if VIEW_MODE!="timers"#] bgcolor="#AAAAAA"[#endif#]><a href="?view_mode=timers">Timers</a></td>
   <td valign="top" width="20%"[#if VIEW_MODE!="events"#] bgcolor="#AAAAAA"[#endif#]><a href="?view_mode=events">Events</a></td>
+  <td valign="top" width="20%"[#if VIEW_MODE!="performance"#] bgcolor="#AAAAAA"[#endif#]><a href="?view_mode=performance">Performance</a></td>
  </tr>
  <tr>
-  <td valign="top" colspan=5>
+  <td valign="top" colspan=6>
   <div id="xrayContent">Loading...</div>
   </td>
  </tr>
@@ -36,7 +37,7 @@
 <div id='contextBody'>...</div>
 <script language="javascript">
  function findContext() {
-  var url="/popup/xray.html?action=context";
+  var url="<#ROOTHTML#>popup/xray.html?action=context";
   var bodyText='';
   [#if CODE_ID!=""#]bodyText=$('#[#CODE_ID#]').val();[#endif CODE_ID#]
   $.post(url, 
