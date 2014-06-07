@@ -2,7 +2,7 @@
 //error_reporting(E_ALL);
 
 
-$tvip = "192.168.0.102"; //IP Address of TV
+$tvip = "192.168.0.50"; //IP Address of TV
 $myip = "192.168.0.30"; //Doesn't seem to be really used
 $mymac = "00-0c-29-3e-b1-4f"; //Used for the access control/validation, but not after that AFAIK
 $appstring = "iphone..iapp.samsung"; //What the iPhone app reports
