@@ -862,6 +862,11 @@ $dictionary=array(
 'TIMEOUT'=>'Timeout',
 'SET_CONTEXT_TIMEOUT'=>'Switch to on timeout',
 'TIMEOUT_CODE'=>'Execute on timeout',
+'GLOBAL_CONTEXT'=>'Global context',
+'LAST_RULE'=>'do not check other patterns when matched',
+
+'SETTINGS_SECTION_'=>'General',
+'SETTINGS_SECTION_HOOK'=>'Hooks',
 
 'TEST'=>'test'
 

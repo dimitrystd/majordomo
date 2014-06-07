@@ -151,17 +151,17 @@
 <table  border="0" align="center">
  <tr>
   <td valign="top">
-<div style="width:<#SETTINGS_SCENES_WIDTH#>px">
+<div[#if "<#TOTAL#>"!="1"#] style="width:<#SETTINGS_SCENES_WIDTH#>px"[#endif#]>
 <div id="slider">
-<ul>
+[#if "<#TOTAL#>"!="1"#]<ul>[#endif#]
 [#begin RESULT#]
-<li id='scene_[#ID#]'>
+[#if "<#TOTAL#>"!="1"#]<li id='scene_[#ID#]'>[#endif#]
 [#if BACKGROUND!=""#]
  <div id="scene_background_[#ID#]" style="position:relative;">
  [#begin ELEMENTS#]
  <!-- element [#ID#] -->
  [#begin STATES#]
-  <div id="state_[#ID#]"[#if SCRIPT_ID!="0" || MENU_ITEM_ID!="0" || ACTION_METHOD!=""#] onClick="stateClicked([#ID#]);"[#endif#] style="position:absolute;left:<#ELEMENTS.LEFT#>px;top:<#ELEMENTS.TOP#>px;[#if "<#ELEMENTS.TYPE#>"=="html"#]width:<#ELEMENTS.WIDTH#>px;height:<#ELEMENTS.HEIGHT#>px;[#if "<#ELEMENTS.BACKGROUND#>"=="1"#]border:1px solid white;background-color:rgba(0,0,0,0.5);padding:5px;[#endif BACKGROUND#][#endif#][#if SCRIPT_ID!="0"#]cursor:pointer;[#endif#]display:none;">[#if "<#ELEMENTS.TYPE#>"=="img"#]<img src="[#IMAGE#]" border="0">[#endif#][#if "<#ELEMENTS.TYPE#>"=="html"#][#CODE#][#HTML#][#endif#]</div>
+  <div id="state_[#ID#]"[#if SCRIPT_ID!="0" || MENU_ITEM_ID!="0" || ACTION_METHOD!=""#] onClick="stateClicked([#ID#]);"[#endif#] style="position:absolute;left:<#ELEMENTS.LEFT#>px;top:<#ELEMENTS.TOP#>px;[#if "<#ELEMENTS.TYPE#>"=="html"#]width:<#ELEMENTS.WIDTH#>px;height:<#ELEMENTS.HEIGHT#>px;[#if "<#ELEMENTS.BACKGROUND#>"=="1"#]border:1px solid white;background-color:rgba(0,0,0,0.5);padding:5px;[#endif BACKGROUND#][#endif#][#if SCRIPT_ID!="0" || MENU_ITEM_ID!="0" || ACTION_METHOD!=""#]cursor:pointer;[#endif#]display:none;">[#if "<#ELEMENTS.TYPE#>"=="img"#]<img src="[#IMAGE#]" border="0">[#endif#][#if "<#ELEMENTS.TYPE#>"=="html"#][#CODE#][#HTML#][#endif#]</div>
  [#end STATES#]
  [#if JAVASCRIPT!=""#]
  <script language="javascript">
@@ -173,9 +173,9 @@
  <img src="[#BACKGROUND#]" border="0">
  </div>
 [#endif#]
- </li>
+ [#if "<#TOTAL#>"!="1"#]</li>[#endif#]
 [#end RESULT#]
-</ul>
+[#if "<#TOTAL#>"!="1"#]</ul>[#endif#]
 </div>
 </div>
 </td>

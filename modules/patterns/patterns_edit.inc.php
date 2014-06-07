@@ -63,11 +63,21 @@
    global $is_context;
    $rec['IS_CONTEXT']=(int)$is_context;
 
+   global $is_common_context;
+   $rec['IS_COMMON_CONTEXT']=(int)$is_common_context;
+
    global $matched_context_id;
    $rec['MATCHED_CONTEXT_ID']=(int)$matched_context_id;
 
    global $timeout;
    $rec['TIMEOUT']=(int)$timeout;
+
+   global $is_last;
+   $rec['IS_LAST']=(int)$is_last;
+
+   global $priority;
+   $rec['PRIORITY']=(int)$priority;
+
 
    global $timeout_context_id;
    $rec['TIMEOUT_CONTEXT_ID']=(int)$timeout_context_id;
