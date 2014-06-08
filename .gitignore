@@ -9,3 +9,4 @@ vendor
 backup
 phpmyadmin4
 *.log
+megad-328*.hex
