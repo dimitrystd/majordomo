@@ -17,10 +17,21 @@ if (!isset($ip)){
   exit;
 }
 $objects = getObjectsByClass('Megadevice');
-foreach ($objects as $obj) {
-  if (trim(getGlobal($obj['TITLE'].'.ipAddress')) == $ip) {
-    $megaD = $obj;
-    break;
+$megaD = null;
+if (isset($params['mdid'])) {
+  foreach ($objects as $obj) {
+    if (trim(getGlobal($obj['TITLE'].'.id')) == $params['mdid']) {
+      $megaD = $obj;
+      break;
+    }
+  }
+}
+if (!isset($megaD)) {
+  foreach ($objects as $obj) {
+    if (trim(getGlobal($obj['TITLE'].'.ipAddress')) == $ip) {
+      $megaD = $obj;
+      break;
+    }
   }
 }
 if (!isset($megaD)) {
