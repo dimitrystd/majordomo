@@ -710,7 +710,6 @@ curl_close($ch);
    global $property_linked_history;
    if (!$property_linked_history[$property][$prop['ONCHANGE']]) {
     $property_linked_history[$property][$prop['ONCHANGE']]=1;
-    global $on_change_called;
     $params=array();
     $params['PROPERTY']=$property;
     $params['NEW_VALUE']=(string)$value;
