@@ -14,12 +14,20 @@
         <param name="file" value="debmes/%s.log" />
         <param name="datePattern" value="Y-m-d" />
     </appender>
-    <logger name="class.object" additivity="false">
+    <logger name="page.megad" additivity="false">
+        <level value="TRACE" />
+        <appender_ref ref="objectsFileLog" />
+    </logger>
+    <logger name="class.object.MegaD4" additivity="false">
+        <level value="TRACE" />
+        <appender_ref ref="objectsFileLog" />
+    </logger>
+    <logger name="class.object.MegaD5" additivity="false">
         <level value="TRACE" />
         <appender_ref ref="objectsFileLog" />
     </logger>
    <root>
-      <level value="TRACE" />
+      <level value="DEBUG" />
       <appender_ref ref="default" />
    </root>
 </configuration>
