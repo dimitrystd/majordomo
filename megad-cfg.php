@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2013, Andrey_B
+* Copyright (c) 2013-2014, Andrey_B
 * http://ab-log.ru
 * Подробнее см. LICENSE.txt или http://www.gnu.org/licenses/
 */
@@ -14,7 +14,7 @@ if( !function_exists('hex2bin') )
 }
 
 # Parsing options
-$options = getopt("sp:fewb", array("scan", "ip:", "new-ip:", "fw:", "local-ip:", "ee"));
+$options = getopt("sp:fewb", array("scan", "ip:", "new-ip:", "fw:", "local-ip:", "ee", "read-conf:", "write-conf:"));
 #print_r($options);
 
 # Prepearing sockets
@@ -88,6 +88,127 @@ function get_local_ip_win()
 	return $local_addrs;
 }
 
+$conf_flag = 0;
+
+if ( array_key_exists('read-conf', $options) || array_key_exists('write-conf', $options) )
+{
+	if ( array_key_exists('p', $options) && ( strlen($options['p']) > 5 || empty($options['p']) ) )
+	{
+		echo "Error: incorrect password!\n";
+		exit;
+	}
+
+	if ( array_key_exists('ip', $options) && empty($options['ip']) )
+	{
+		echo "Error: incorrect IP!\n";
+		exit;
+	}
+
+	if ( empty($options['read-conf']) && empty($options['write-conf']) )
+	{
+		echo "Error: incorrect filename!\n";
+		exit;
+	}
+
+	if ( array_key_exists('read-conf', $options) )
+	{
+		echo "Reading configuration... ";
+
+		$pages = array("cf=1", "cf=2");
+		//$pages = array();
+		$page = file_get_contents("http://".$options['ip']."/".$options['p']);
+		$ports = preg_replace("/.*\?pt=(\d+).*/", "$1", $page);
+		for ( $i = 0; $i <= $ports; $i++ )
+		$pages[] = "pt=$i";
+	
+		$fh = fopen($options['read-conf'], "w");
+		$dom = new DOMDocument();
+		$preset_flag = 0;
+
+		for ( $i = 0; $i < count($pages); $i++ )
+		{
+			if ( $preset_flag == 1 )			
+			{
+				//echo "Setting preset 0\n";
+				$page = file_get_contents("http://".$options['ip']."/".$options['p']."/?cf=1&pr=0");
+				sleep(1);
+				$preset_flag = 2;
+			}
+
+			$page = file_get_contents("http://".$options['ip']."/".$options['p']."/?".$pages[$i]);
+
+			@$dom->loadHTML($page);
+			//$url = "http://".$options['ip']."/".$options['p']."/?";
+			$url = "";
+
+			$els=$dom->getelementsbytagname('input');
+			foreach($els as $inp)
+			{
+				if ( $inp->getAttribute('type') != "submit" )
+				{
+					$name=$inp->getAttribute('name');
+					//$value=urlencode($inp->getAttribute('value'));
+					if ( $inp->getAttribute('type') == "checkbox" )
+					{
+						if ( $inp->hasAttribute('checked') )
+						$value=1;
+						else
+						$value=0;
+					}
+					else
+					$value=$inp->getAttribute('value');
+					if ( $name != "pt" )
+					$url .= "$name=$value&";
+				}
+			}
+
+			$select = $dom->getelementsbytagname('select');
+			foreach($select as $elem)
+			{
+				$name=$elem->getAttribute('name');
+				$els=$elem->getelementsbytagname('option');
+	
+				foreach($els as $inp)
+				{
+					if ( $inp->hasAttribute('selected') )
+					{
+						//$name=$inp->getAttribute('name');
+						$value=urlencode($inp->getAttribute('value'));
+						$value=$inp->getAttribute('value');
+						$url .= "$name=$value&";
+
+						if ( $pages[$i] == "cf=1" && $name == "pr" && !empty($value) )
+						{
+							$preset_flag = 1;
+							$stored_preset = $value;
+						}
+
+					}
+				}
+	
+			}
+
+			$url = preg_replace("/&$/", "", $url);
+			fwrite($fh, "$url\n");
+		}
+
+		fclose($fh);
+
+		if ( $preset_flag == 2 )			
+		{
+			//echo "Setting preset 1\n";
+			$page = file_get_contents("http://".$options['ip']."/".$options['p']."/?cf=1&pr=$stored_preset");
+			sleep(1);
+		}
+
+
+		echo "OK\n";
+	}
+
+	$conf_flag = 1;
+
+}
+
 # Scanning network for Mega-cool MegaD-devices ;)
 if ( array_key_exists('scan', $options) || array_key_exists('s', $options) )
 {
@@ -123,6 +244,7 @@ else if ( array_key_exists('ip', $options) && array_key_exists('new-ip', $option
 			{
 				if ( empty($options['p'][$i]) )
 				$broadcast_string .= chr("\0");
+				else
 				$broadcast_string .= $options['p'][$i];
 			}
 
@@ -152,7 +274,7 @@ else if ( array_key_exists('ip', $options) && array_key_exists('new-ip', $option
 				if ( ord($pkt[0]) == 0xAA )
 				{
 					if ( ord($pkt[1]) == 0x01 )
-					echo "IP address was successfully chanched!\n";
+					echo "IP address was successfully changed!\n";
 					elseif ( ord($pkt[1]) == 0x02 )
 					echo "Wrong password!\n";
 				}
@@ -334,8 +456,11 @@ else if ( (array_key_exists('ip', $options) || array_key_exists('f', $options) )
 	else
 	echo "Error: empty password!\n";
 }
+elseif ( $conf_flag == 1 )
+{}
 else
 {
+	echo "MegaD-328 management script Ver 1.2\n";
 	echo "Available options:\n";
 	echo "--scan (Scanning network for MegaD-328 devices)\n";
 	echo "--ip [current IP address] --new-ip [new IP address] -p [password] (Changing IP-address)\n";
@@ -344,10 +469,31 @@ else
 	echo "--fw [HEX-file] -f (Upload firmware. Empty flash, bootloader mode)\n";
 	echo "--fw [HEX-file] -f -e (Upload firmware. Broken firmware)\n";
 	echo "--ee (Optional! Erase EEPROM)\n";
+	echo "--read-conf [filename] (Read configuration: from device to file)\n";
+	echo "--write-conf [filename] (Write configuration: from file to device)\n";
 }
 
-# Closing sockets
+if ( array_key_exists('write-conf', $options) && $conf_flag == 1 )
+{
+	echo "Writing configuration... ";
+	$wconf = file($options['write-conf']);
+	for ( $i = 0; $i < count($wconf); $i++ )
+	{
+		file_get_contents("http://".$options['ip']."/".$options['p']."/?".$wconf[$i]);
+		//echo $wconf[$i]."\n";
+		usleep(100000);
+		if ( !preg_match("/^cf/", $wconf[$i]) )
+		{
+			file_get_contents("http://".$options['ip']."/".$options['p']."/?".$wconf[$i]);
+			usleep(100000);
+		}
+	}
 
+	echo "OK\n";
+}
+
+
+# Closing sockets
 socket_close($sock);
 fclose($socket);
 
