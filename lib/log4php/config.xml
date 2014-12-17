@@ -7,6 +7,18 @@
       <param name="file" value="debmes/%s.log" />
       <param name="datePattern" value="Y-m-d" />
    </appender>
+   <appender name="errorLog" class="LoggerAppenderDailyFile">
+      <layout class="LoggerLayoutPattern">
+         <param name="conversionPattern" value="%d{H:i:s} %p [%c]: %m (at %F:%L) %x%n" />
+      </layout>
+      <param name="file" value="debmes/error_%s.log" />
+      <param name="datePattern" value="Y-m-d" />
+      <filter class="LoggerFilterLevelRange">
+          <param name="LevelMin" value="error" />
+          <param name="LevelMax" value="fatal" />
+      </filter>
+      <filter class="LoggerFilterDenyAll" />
+   </appender>
     <appender name="objectsFileLog" class="LoggerAppenderDailyFile">
         <layout class="LoggerLayoutPattern">
             <param name="conversionPattern" value="%d{H:i:s} %p [%c]: %m %x%n" />
@@ -29,5 +41,6 @@
    <root>
       <level value="DEBUG" />
       <appender_ref ref="default" />
+      <appender_ref ref="errorLog" />
    </root>
 </configuration>
