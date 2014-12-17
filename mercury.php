@@ -1,30 +1,56 @@
-<?php
-exec('mode COM3: BAUD=9600 PARITY=n DATA=8 STOP=1 to=on xon=off odsr=off octs=off dtr=on rts=on idsr=off');
-// Несмотря на настройки, порт правильно не откравается, перед запуском скрипта надо запустить родной софт
-// причины такого поведения пока не выяснены
+п»ї<?php
 
-$f = fopen("COM3","r+");
-try{
-	$i=0;
-	$cmd = array(0x00,0x0D,0x29,0x0F,0x63, 0xb2, 0xbd );			// Команда "Мгновенные значения"
-	$c="";
-	for($i=0; $i < count($cmd); $i++){$c .= chr($cmd[$i]);}		// Сформировать строку символов для посылки в COM-порт
-	fwrite($f,$c);
-	$result=fread($f,14);
+// https://github.com/mrkrasser/MercuryStats/blob/master/Readme.ru.md
+// https://github.com/mrkrasser/MercuryStats/blob/master/examples/MercuryStatsGetCurrent.xively.php
 
-	// Результат получаем в шестнадцатиричном виде, но его написание соответствует десятичному значению.
-	// Например 0x22 0x87 = 228,7 вольт. Переводим результат в человеческий вид.
-	$Uv = ((ord($result[5])>>4)*100)+((ord($result[5])&0x0f)*10)+(ord($result[6])>>4)+((ord($result[6])&0x0f)/10);
-	$Ia = ((ord($result[7])>>4)*10)+(ord($result[7])&0x0f)+((ord($result[8])>>4)/10)+((ord($result[8])&0x0f)/100);
-	$Pv = ((ord($result[9])&0x0f)*10)+(ord($result[10])>>4)+((ord($result[10])&0x0f)/10)+((ord($result[11])>>4)/100)+((ord($result[11])&0x0f)/1000);
+// ini_set('max_execution_time', 10);
 
-	// Значения Uv, Ia, Pv можно писать в базу...
-	echo "<br>Напряжение сети:  ".$Uv ." Uv";
-	echo "<br>Сила така :  ".$Ia ." Ia";
-	echo "<br>Потребляемая мощьность : ".$Pv." P kVt";
-} catch (Exception $e) {
-    echo 'Caught exception: ',  $e->getMessage(), "\n";
+// Parameters for port
+exec('/bin/stty -F /dev/ttyUSB0 9600 ignbrk -brkint -icrnl -imaxbel -opost -onlcr -isig -icanon -iexten -echo -echoe -echok -echoctl -echoke noflsh -ixon -crtscts');
+
+// Open port
+$fp = fopen('/dev/ttyUSB0', 'r+');
+
+if (!$fp) {
+  echo 'Error1';
+  exit;
 }
-fclose($f);
 
-?>
+// Sent command to device
+stream_set_blocking($fp, 1);
+
+fwrite($fp, "\x00\x0D\x29\x0F\x63\xb2\xbd"); // string to receiving current amperage,voltage with corrected CRC and device address
+
+// Read answer from device with 500ms timeout
+$result = '';
+$c = '';
+stream_set_blocking($fp, 0);
+$timeout = microtime(1) + 0.5;
+
+while (microtime(1) < $timeout) {
+  $c = fgetc($fp);
+  if ($c === false) {
+    usleep(5);
+    continue;
+  }
+
+  $result.= $c;
+}
+
+fclose($fp);
+
+// split answer data on parts
+// $crc = substr($result, -2); // crc16  of answer
+// $addr = hexdec(bin2hex(substr($result, 1, 3))); // address of power device
+// $answer_cmd = substr($result, 4, -2); // answered command
+$answer = substr($result, 5, -2); // answer string
+
+// Format and output data
+$voltage = bin2hex(substr($answer, 0, 2)) / 10;
+$amperage = bin2hex(substr($answer, 2, 2)) / 100;
+$energy = bin2hex(substr($answer, 4, 3)) / 1000;
+
+echo "<br>РќР°РїСЂСЏР¶РµРЅРёРµ СЃРµС‚Рё:  $voltage Uv\n";
+echo "<br>РЎРёР»Р° С‚Р°РєР° :  $amperage Ia\n";
+echo "<br>РџРѕС‚СЂРµР±Р»СЏРµРјР°СЏ РјРѕС‰СЊРЅРѕСЃС‚СЊ : $energy P kVt";
+		
