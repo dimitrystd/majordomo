@@ -31,4 +31,8 @@ require_once dirname(__FILE__) . '/log4php/Logger.php';
 // Tell log4php to use our configuration file.
 Logger::configure(dirname(__FILE__) . '/log4php/config.xml');
 
-?>
+// Insert the path where you unpacked log4php
+require_once dirname(__FILE__) . '/log4php/Logger.php';
+
+require_once dirname(__FILE__) . '/PHPMailer/PHPMailerAutoload.php';
+// require_once dirname(__FILE__) . '/PHPMailer/class.phpmailer.php';
