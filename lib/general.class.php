@@ -283,53 +283,36 @@ function checkGeneral($field) {
 }
 
 // --------------------------------------------------------------------   
-function SendMail($from, $to, $subj, $body, $attach="") {
+function sendMail($from, $to, $subj, $body, $attach = '') {
+  $mail             = new PHPMailer();
 
- $mail = new htmlMimeMail();
- $mail->setFrom($from);
- $mail->setSubject($subj);
- $mail->setText($body);
- $mail->setTextCharset('windows-1251');
- if ($attach!='') {
-   $attach_data=$mail->getFile($attach);
-   $mail->addAttachment($attach_data, basename($attach), '');
- }
- $result = $mail->send(array($to));
- return $result;
+  $mail->isSMTP();                     // telling the class to use SMTP
+  // $mail->SMTPDebug  = 1;            // enables SMTP debug information (for testing)
+                                       // 1 = errors and messages
+                                       // 2 = messages only
+  $mail->SMTPAuth   = true;            // enable SMTP authentication
+  $mail->SMTPSecure = 'tls';           // sets the prefix to the servier
+  $mail->Host       = 'smtp.gmail.com';// sets GMAIL as the SMTP server
+  $mail->Port       = 587;             // set the SMTP port for the GMAIL server
+  $mail->Username   = GMAIL_USER;      // GMAIL username from config.php
+  $mail->Password   = GMAIL_PASSWORD;  // GMAIL password from config.php
+  $mail->isHTML(true);                 // Set email format to HTML
 
-}
-
-// --------------------------------------------------------------------   
-function SendMail_HTML($from, $to, $subj, $body, $attach="") {
- // sending email as html
- //global $SERVER_SOFTWARE;
-
- $mail = new htmlMimeMail();
- $mail->setFrom($from);
- $mail->setSubject($subj);
- $mail->setHTML($body);
- $mail->setHTMLCharset('windows-1251');
- $mail->setHeadCharset('windows-1251');
-
-
- if (is_array($attach)) {
-  $total=count($attach);
-  for($i=0;$i<$total;$i++) {
-   if (file_exists($attach[$i])) {
-    $attach_data=$mail->getFile($attach[$i]);
-    $mail->addAttachment($attach_data, basename($attach[$i]), '');
-   }
+  $mail->Subject = $subj;
+  $mail->Body    = $body;
+  if ($attach != '') {
+    $mail->addAttachment($attach);     // Add attachments
   }
- } elseif ((file_exists($attach)) && ($attach!="")) {
-  $attach_data=$mail->getFile($attach);
-  $mail->addAttachment($attach_data, basename($attach), '');
- }
-        
 
- $result = $mail->send(array($to));
- return $result;
+  $mail->SetFrom($from);
+  $mail->AddAddress($to);
 
-
+  $log = getLogger(__FILE__);
+  if(!$mail->send()) {
+    $log->error('Message could not be sent. Mailer Error: ' . $mail->ErrorInfo);
+  } else {
+    $log->debug('Message has been sent');
+  }
 }
 
 // --------------------------------------------------------------------   

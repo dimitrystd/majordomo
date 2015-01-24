@@ -31,6 +31,9 @@ Define('DB_NAME', 'db_terminal');
 Define('DB_USER', 'root');
 Define('DB_PASSWORD', '');
 
+Define('GMAIL_USER', 'your_user@gmail.com');
+Define('GMAIL_PASSWORD', '');
+
 Define('DIR_TEMPLATES', "./templates/");
 Define('DIR_MODULES', "./modules/");
 Define('DEBUG_MODE', 1);
