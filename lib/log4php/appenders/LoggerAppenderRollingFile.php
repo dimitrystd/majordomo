@@ -220,7 +220,8 @@ class LoggerAppenderRollingFile extends LoggerAppenderFile {
 			}
 			
 			// Rollover if needed
-			if (filesize($this->file) > $this->maxFileSize) {
+			if (filesize(realpath($this->file)) > $this->maxFileSize) {
+			//if (filesize($this->file) > $this->maxFileSize) {
 				try {
 					$this->rollOver();
 				} catch (LoggerException $ex) {
