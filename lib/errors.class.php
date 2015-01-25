@@ -46,7 +46,7 @@
      echo "Warning...<br>";
     }
    }
-   sendmail("errors@".PROJECT_DOMAIN, PROJECT_BUGTRACK, "Error reporting: $script", $description);
+   sendMail("errors@".PROJECT_DOMAIN, PROJECT_BUGTRACK, "Error reporting: $script", $description);
    if ($stop) exit;
   }
 
