@@ -43,7 +43,7 @@
      $rec['ID']=SQLInsert($table_name, $rec); // adding new record
      $tmp=SQLSelectOne("SELECT COUNT(*) as TOTAL FROM snmpdevices");
      if ($tmp['TOTAL']==1) {
-      SaveFile(ROOT.'reboot'); // first device added, need reboot
+      @SaveFile(ROOT.'reboot'); // first device added, need reboot
      }
     }
    //updating 'MIB_FILE' (file)
@@ -97,13 +97,27 @@
       $prec['CHECK_NEXT']=date('Y-m-d H:i:s');
      }
     }
+
+    $old_linked_object=$prec['LINKED_OBJECT'];
+    $old_linked_property=$prec['LINKED_PROPERTY'];
+
+
     $prec['LINKED_OBJECT']=trim(${'linked_object_'.$properties[$i]['ID']});
     $prec['LINKED_PROPERTY']=trim(${'linked_property_'.$properties[$i]['ID']});
+
     $value_changed=0;
     if (${'pvalue_'.$properties[$i]['ID']}!=$prec['VALUE']) {
      $value_changed=1;
     }
     SQLUpdate('snmpproperties', $prec);
+
+    if ($prec['LINKED_OBJECT'] && $prec['LINKED_PROPERTY']) {
+     addLinkedProperty($prec['LINKED_OBJECT'], $prec['LINKED_PROPERTY'], $this->name);
+    }
+    if ($old_linked_object && $old_linked_object!=$prec['LINKED_OBJECT'] && $old_linked_property && $old_linked_property!=$prec['LINKED_PROPERTY']) {
+     removeLinkedProperty($old_linked_object, $old_linked_property, $this->name);
+    }
+
     if ($value_changed) {
      $this->setProperty($properties[$i]['ID'], trim(${'pvalue_'.$properties[$i]['ID']}));
     }

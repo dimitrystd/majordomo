@@ -3,14 +3,20 @@
 * @version 0.1 (auto-set)
 */
 
+
   global $filter_name;
+
+  if ($this->filter_name) {
+   $out['FILTER_SET']=$this->filter_name;
+  }
+
   if ($filter_name) {
    $this->filter_name=$filter_name;
   }
 
 
  $sections=array();
- $filters=array('', 'scenes', 'calendar', 'growl', 'twitter', 'pushover', 'hook');
+ $filters=array('', 'scenes', 'calendar', 'growl', 'twitter', 'pushover', 'pushbullet', 'hook', 'backup', 'logger');
  $total=count($filters);
  for($i=0;$i<$total;$i++) {
   $rec=array();
@@ -29,6 +35,166 @@
   }
  }
  $out['SECTIONS']=$sections;
+
+ if ($this->filter_name=='' && !defined('SETTINGS_GENERAL_ALICE_NAME')) {
+  $options=array(
+   'GENERAL_ALICE_NAME'=>'Computer\'s name'
+  );
+
+  foreach($options as $k=>$v) {
+   $tmp=SQLSelectOne("SELECT ID FROM settings WHERE NAME LIKE '".$k."'");
+   if (!$tmp['ID']) {
+    $tmp=array();
+    $tmp['NAME']=$k;
+    $tmp['TITLE']=$v;
+    $tmp['TYPE']='text';
+    $tmp['DEFAULTVALUE']='';
+    SQLInsert('settings', $tmp);
+   }
+  }
+ }
+
+ if ($this->filter_name=='hook' && !defined('SETTINGS_HOOK_AFTER_PLAYSOUND')) {
+  //SETTINGS_HOOK_BEFORE_PLAYSOUND
+  //SETTINGS_HOOK_AFTER_PLAYSOUND
+  $options=array(
+   'HOOK_BEFORE_PLAYSOUND'=>'Before PlaySound (code)',
+   'HOOK_AFTER_PLAYSOUND'=>'After PlaySound (code)'
+  );
+
+  foreach($options as $k=>$v) {
+   $tmp=SQLSelectOne("SELECT ID FROM settings WHERE NAME LIKE '".$k."'");
+   if (!$tmp['ID']) {
+    $tmp=array();
+    $tmp['NAME']=$k;
+    $tmp['TITLE']=$v;
+    $tmp['TYPE']='text';
+    $tmp['DEFAULTVALUE']='';
+    SQLInsert('settings', $tmp);
+   }
+  }
+ }
+
+ if ($this->filter_name=='logger' && !defined('SETTINGS_LOGGER_DESTINATION')) {
+
+  $options=array(
+   'LOGGER_DESTINATION'=>'Write log to (file/database/both)'
+  );
+  foreach($options as $k=>$v) {
+   $tmp=SQLSelectOne("SELECT ID FROM settings WHERE NAME LIKE '".$k."'");
+   if (!$tmp['ID']) {
+    $tmp=array();
+    $tmp['NAME']=$k;
+    $tmp['TITLE']=$v;
+    $tmp['TYPE']='text';
+    SQLInsert('settings', $tmp);
+   }
+  }
+  $query = "CREATE TABLE IF NOT EXISTS `log4php_log` (`timestamp` DATETIME, `logger` VARCHAR(256), `level` VARCHAR(32), `message` VARCHAR(4000), `thread` INTEGER, `file` VARCHAR(255), `line` VARCHAR(10));";
+  SQLExec($query);
+
+ }
+
+ if ($this->filter_name=='scenes' && !defined('SETTINGS_SCENES_VERTICAL_NAV')) {
+  $options=array(
+   'SCENES_VERTICAL_NAV'=>'Vertical navigation'
+  );
+  foreach($options as $k=>$v) {
+   $tmp=SQLSelectOne("SELECT ID FROM settings WHERE NAME LIKE '".$k."'");
+   if (!$tmp['ID']) {
+    $tmp=array();
+    $tmp['NAME']=$k;
+    $tmp['TITLE']=$v;
+    $tmp['TYPE']='onoff';
+    $tmp['DEFAULTVALUE']='0';
+    SQLInsert('settings', $tmp);
+   }
+  }
+
+ }
+
+ if ($this->filter_name=='scenes' && !defined('SETTINGS_SCENES_BACKGROUND_VIDEO')) {
+
+  $options=array(
+   'SCENES_BACKGROUND'=>'Path to background',
+   'SCENES_BACKGROUND_VIDEO'=>'Path to video background',
+   'SCENES_CLICKSOUND'=>'Path to click-sound file'
+  );
+  foreach($options as $k=>$v) {
+   $tmp=SQLSelectOne("SELECT ID FROM settings WHERE NAME LIKE '".$k."'");
+   if (!$tmp['ID']) {
+    $tmp=array();
+    $tmp['NAME']=$k;
+    $tmp['TITLE']=$v;
+    $tmp['TYPE']='path';
+    SQLInsert('settings', $tmp);
+   }
+  }
+
+  $options=array(
+   'SCENES_BACKGROUND_FIXED'=>'Backround Fixed',
+   'SCENES_BACKGROUND_NOREPEAT'=>'Background No repeat'
+  );
+
+  foreach($options as $k=>$v) {
+   $tmp=SQLSelectOne("SELECT ID FROM settings WHERE NAME LIKE '".$k."'");
+   if (!$tmp['ID']) {
+    $tmp=array();
+    $tmp['NAME']=$k;
+    $tmp['TITLE']=$v;
+    $tmp['TYPE']='onoff';
+    $tmp['DEFAULTVALUE']='0';
+    SQLInsert('settings', $tmp);
+   }
+  }
+
+
+
+ }
+
+ if ($this->filter_name=='backup' && !defined('SETTINGS_BACKUP_PATH')) {
+
+  $options=array(
+   'BACKUP_PATH'=>'Path to store backup'
+  );
+  foreach($options as $k=>$v) {
+   $tmp=SQLSelectOne("SELECT ID FROM settings WHERE NAME LIKE '".$k."'");
+   if (!$tmp['ID']) {
+    $tmp=array();
+    $tmp['NAME']=$k;
+    $tmp['TITLE']=$v;
+    $tmp['TYPE']='text';
+    SQLInsert('settings', $tmp);
+   }
+  }
+
+ }
+
+ if ($this->filter_name=='pushbullet' && !defined('SETTINGS_PUSHBULLET_PREFIX')) {
+  $options=array(
+   'PUSHBULLET_KEY'=>'Pushbullet API Key', 
+   'PUSHBULLET_LEVEL'=>'Pushbullet message minimum level', 
+   'PUSHBULLET_DEVICE_ID'=>'Pushbullet Device ID (optional)',
+   'PUSHBULLET_PREFIX'=>'Pushbullet notifiaction prefix (optional)'
+  );
+  foreach($options as $k=>$v) {
+   $tmp=SQLSelectOne("SELECT ID FROM settings WHERE NAME LIKE '".$k."'");
+   if (!$tmp['ID']) {
+    $tmp=array();
+    $tmp['NAME']=$k;
+    $tmp['TITLE']=$v;
+    $tmp['TYPE']='text';
+    if ($k=='PUSHBULLET_LEVEL') {
+     $tmp['VALUE']=1;
+     $tmp['DEFAULTVALUE']=1;
+    }
+    SQLInsert('settings', $tmp);
+   }
+  }
+ }
+
+// if (!empty($options)) {
+// }
 
 
  global $session;

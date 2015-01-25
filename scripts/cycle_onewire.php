@@ -26,10 +26,11 @@ else
    exit;
 }
 
+echo date("H:i:s") . " running " . basename(__FILE__) . "\n";
+
 while(1) 
 {
-   echo date("H:i:s") . " running " . basename(__FILE__) . "\n";
-   setGlobal((str_replace('.php', '', basename(__FILE__))).'Run', time());
+   setGlobal((str_replace('.php', '', basename(__FILE__))).'Run', time(), 1);
 
    // check all 1wire devices
    $onw->updateDevices(); 

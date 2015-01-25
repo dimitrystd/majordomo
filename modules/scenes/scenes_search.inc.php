@@ -12,6 +12,8 @@
 
   if (preg_match('/(\d+)\.html/', $_SERVER["REQUEST_URI"], $m)) {
    $qry.=" AND scenes.ID='".$m[1]."'";
+  } elseif (!$out['CONTROLPANEL']) {
+   $qry.=" AND scenes.HIDDEN!=1";
   }
 
   global $title;
@@ -59,17 +61,18 @@
 
   if ($res[0]['ID']) {
    $total=count($res);
+   $positions=array();
    for($i=0;$i<$total;$i++) {
     // some action for every record if required
-      $elements=SQLSelect("SELECT * FROM elements WHERE SCENE_ID='".$res[$i]['ID']."'");
-      $totale=count($elements);
-      for($ie=0;$ie<$totale;$ie++) {
-       $states=SQLSelect("SELECT * FROM elm_states WHERE ELEMENT_ID='".$elements[$ie]['ID']."'");
-       $elements[$ie]['STATES']=$states;
-      }
-      $res[$i]['ELEMENTS']=$elements;
+      $res[$i]['ELEMENTS']=$this->getElements("SCENE_ID='".$res[$i]['ID']."' AND CONTAINER_ID=0");
+      $res[$i]['ALL_ELEMENTS']=$this->getElements("SCENE_ID='".$res[$i]['ID']."'");
       $res[$i]['NUM']=$i;
       $res[$i]['NUMP']=$i+1;
+   }
+   if ($total==1) {
+    foreach($res[0] as $k=>$v) {
+     $out['SCENE_'.$k]=$v;
+    }
    }
    $out['TOTAL']=$total;
    $out['RESULT']=$res;

@@ -140,6 +140,7 @@ function run() {
         if ($success === false) {
           getLogger($this)->error(sprintf('Error in script "%s". Code: %s', $rec['TITLE'], $code));
         }
+        return $success;
       } catch (Exception $e) {
         getLogger($this)->error(sprintf('Error in script "%s"', $rec['TITLE']), $e);
       }
@@ -166,6 +167,10 @@ function admin(&$out) {
    $this->runScript($this->id);
    exit;
    //$this->redirect("?");
+  }
+
+  if ($this->view_mode=='clone' && $this->id) {
+   $this->clone_script($this->id);
   }
 
   if ($this->view_mode=='edit_scripts') {
@@ -195,6 +200,23 @@ function admin(&$out) {
  }
 
 }
+
+/**
+* Title
+*
+* Description
+*
+* @access public
+*/
+ function clone_script($id) {
+  $rec=SQLSelectOne("SELECT * FROM scripts WHERE ID='".(int)$id."'");
+  $rec['TITLE'].='_copy';
+  unset($rec['ID']);
+  unset($rec['EXECUTED']);
+  $rec['ID']=SQLInsert('scripts', $rec);
+  $this->redirect("?view_mode=edit_scripts&id=".$rec['ID']);
+ }
+
 /**
 * FrontEnd
 *
@@ -343,7 +365,6 @@ scripts - Scripts
  safe_execs: EXCLUSIVE int(3) NOT NULL DEFAULT 0
  safe_execs: PRIORITY int(10) NOT NULL DEFAULT 0
  safe_execs: ADDED datetime
-
 
 
 EOD;

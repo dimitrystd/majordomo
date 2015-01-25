@@ -32,6 +32,8 @@ $bts_cmd = 'hcitool scan | grep ":"';
 
 $first_run    = 1;
 $skip_counter = 0;
+
+echo "Running bluetooth scanner\n";
  
 while(1) 
 {
@@ -41,8 +43,7 @@ while(1)
       $skip_counter = 0;
       $data = '';
       
-      echo "Running bluetooth scanner\n";
-      
+     
       if (substr(php_uname(), 0, 7) == "Windows") 
       {   
          // windows scanner
@@ -100,12 +101,14 @@ while(1)
                   echo date('Y/m/d H:i:s')." Device found: $mac\n";
                   
                   $rec = SQLSelectOne("SELECT * FROM btdevices WHERE MAC LIKE '" . $mac . "'");
+                  $previous_found = $rec['LAST_FOUND'];
                   $rec['LAST_FOUND'] = date('Y/m/d H:i:s');
                   $rec['LOG']        = 'Device found '. date('Y/m/d H:i:s') . "\n" . $rec['LOG'];
      
                   if (!$rec['ID']) 
                   {
                      $rec['FIRST_FOUND'] = $rec['LAST_FOUND'];
+                     $previous_found = $rec['LAST_FOUND'];
                      $rec['MAC']         = strtolower($mac);
          
                      $rec['TITLE'] = ($title != '') ? 'Устройство: ' . $title : 'Новое устройство';
@@ -124,7 +127,7 @@ while(1)
                      SQLUpdate('btdevices', $rec);
                   }
       
-                  getObject('BlueDev')->raiseEvent("Found", array('mac' => $mac, 'user' => $user['NAME'], 'new' => $new));
+                  getObject('BlueDev')->raiseEvent("Found", array('mac' => $mac, 'user' => $user['NAME'], 'new' => $new, 'previous_found' => $previous_found, 'last_found' => $rec['FIRST_FOUND']));
                } 
                else 
                {
@@ -174,7 +177,7 @@ while(1)
    } 
    else 
    {
-      echo "Running Bluetooth monitor.";
+      //echo "Running Bluetooth monitor.";
    }
 
    $first_run=0;

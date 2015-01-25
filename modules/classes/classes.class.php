@@ -206,6 +206,7 @@ function admin(&$out) {
  function import_classes(&$out) {
   global $file;
   global $overwrite;
+  global $only_classes;
 
   $data=LoadFile($file);
   $records=unserialize($data);
@@ -214,9 +215,17 @@ function admin(&$out) {
    $total=count($records);
    for($i=0;$i<$total;$i++) {
     $old_class=SQLSelectOne("SELECT ID FROM classes WHERE TITLE LIKE '".DBSafe($records[$i]['TITLE'])."'");
+    $total_o=0;
     if ($old_class['ID']) {
+     $old_objects=SQLSelect("SELECT * FROM objects WHERE CLASS_ID='".$old_class['ID']."'");
+     $total_o=count($old_objects);
+     for($io=0;$io<$total_o;$io++) {
+      $old_objects[$io]['CLASS_ID']=0;
+      SQLUpdate('objects', $old_objects[$io]);
+     }
      if ($overwrite) {
       $this->delete_classes($old_class['ID']);
+      $records[$i]['ID']=$old_class['ID'];
      } else {
       $records[$i]['TITLE']=$records[$i]['TITLE'].rand(0, 500);
      }
@@ -227,7 +236,15 @@ function admin(&$out) {
     unset($records[$i]['METHODS']);
     $properties=$records[$i]['PROPERTIES'];
     unset($records[$i]['PROPERTIES']);
+
     $records[$i]['ID']=SQLInsert('classes', $records[$i]);
+
+    if ($total_o) {
+     for($io=0;$io<$total_o;$io++) {
+      $old_objects[$io]['CLASS_ID']=$records[$i]['ID'];
+      SQLUpdate('objects', $old_objects[$io]);
+     }
+    }
 
     if (is_array($properties)) {
      $total_p=count($properties);
@@ -245,7 +262,7 @@ function admin(&$out) {
      }
     }
 
-    if (is_array($objects)) {
+    if (is_array($objects) && !$only_classes) {
      $total_o=count($objects);
      for($o=0;$o<$total_o;$o++) {
       $objects[$o]['CLASS_ID']=$records[$i]['ID'];
@@ -277,6 +294,8 @@ function admin(&$out) {
    }
    //print_r($records);
   }
+
+  $this->updateTree_classes();
   $this->redirect("?");
 
  }
@@ -289,6 +308,7 @@ function admin(&$out) {
 * @access public
 */
  function export_classes(&$out, $id) {
+  global $skip_objects;
   $qry=1;
   $qry.=" AND ID='".(int)$id."'";
 
@@ -330,6 +350,7 @@ function admin(&$out) {
     }
 
 
+  if (!$skip_objects) {
 
    $objects=SQLSelect("SELECT * FROM objects WHERE CLASS_ID='".$records[$i]['ID']."'");
    $total_o=count($objects);
@@ -360,6 +381,12 @@ function admin(&$out) {
     unset($objects[$o]['LOCATION_ID']);
     unset($objects[$o]['SUB_LIST']);
    }
+
+  } else {
+   $objects=array();
+  }
+
+
    $records[$i]['OBJECTS']=$objects;
    unset($records[$i]['ID']);
    unset($records[$i]['PARENT_ID']);
@@ -515,8 +542,8 @@ function usual(&$out) {
   if ($rec['SUB_LIST']!='' && $rec['SUB_LIST']!=$rec['ID'] && $rec['SUB_LIST']!='') {
    return;
   }
-  SQLExec("DELETE FROM properties WHERE CLASS_ID='".$rec['ID']."'");
-  SQLExec("DELETE FROM methods WHERE CLASS_ID='".$rec['ID']."'");
+  SQLExec("DELETE FROM properties WHERE CLASS_ID='".$rec['ID']."' AND OBJECT_ID=0");
+  SQLExec("DELETE FROM methods WHERE CLASS_ID='".$rec['ID']."' AND OBJECT_ID=0");
   include_once(DIR_MODULES.'objects/objects.class.php');
   $o=new objects();
   $objects=SQLSelect("SELECT * FROM objects WHERE CLASS_ID='".$rec['ID']."'");
@@ -525,6 +552,7 @@ function usual(&$out) {
    $o->delete_objects($objects[$i]['ID']);   
   }
   SQLExec("DELETE FROM classes WHERE ID='".$rec['ID']."'");
+  $this->updateTree_classes();
  }
 /**
 * classes build tree
@@ -538,6 +566,12 @@ function usual(&$out) {
    if ($res[$i]['PARENT_ID']==$parent_id) {
     $res[$i]['LEVEL']=$level;
     $res[$i]['RESULT']=$this->buildTree_classes($res, $res[$i]['ID'], ($level+1));
+    if (!is_array($res[$i]['RESULT'])) {
+     unset($res[$i]['RESULT']);
+    }
+    if (!$res[$i]['RESULT'] && !$res[$i]['OBJECTS']) {
+     $res[$i]['CAN_DELETE']=1;
+    }
     $res2[]=$res[$i];
    }
   }

@@ -137,7 +137,7 @@ function admin(&$out) {
 
    $this->config['CONNECT_USERNAME']=$connect_username;
    $this->config['CONNECT_PASSWORD']=$connect_password;
-   $this->config['CONNECT_SYNC']=$connect_sync;
+   $this->config['CONNECT_SYNC']=(int)$connect_sync;
 
    $this->saveConfig();
    $this->redirect("?");
@@ -161,13 +161,13 @@ function admin(&$out) {
 *
 * @access public
 */
- function sendMenu() {
+ function sendMenu($force_data=0) {
    // menu items
    $data=array();
    $data['COMMANDS']=SQLSelect("SELECT * FROM commands");
    $total=count($data['COMMANDS']);
    for($i=0;$i<$total;$i++) {
-    if (!$this->config['CONNECT_SYNC']) {
+    if (!$this->config['CONNECT_SYNC'] && !$force_data) {
      unset($data['COMMANDS'][$i]['CUR_VALUE']);
      unset($data['COMMANDS'][$i]['RENDER_TITLE']);
      unset($data['COMMANDS'][$i]['RENDER_DATA']);

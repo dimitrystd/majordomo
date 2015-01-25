@@ -130,6 +130,12 @@ function admin(&$out) {
   if ($this->view_mode=='' || $this->view_mode=='search_objects') {
    $this->search_objects($out);
   }
+
+  if ($this->view_mode=='clone' && $this->id) {
+   $this->clone_object($this->id);
+  }
+
+
   if ($this->view_mode=='edit_objects') {
    $this->edit_objects($out, $this->id);
   }
@@ -139,6 +145,63 @@ function admin(&$out) {
   }
  }
 }
+
+/**
+* Title
+*
+* Description
+*
+* @access public
+*/
+ function clone_object($id) {
+
+  $rec=SQLSelectOne("SELECT * FROM objects WHERE ID='".$id."'");
+  $rec['TITLE']=$rec['TITLE'].' (copy)';
+  unset($rec['ID']);
+  $rec['ID']=SQLInsert('objects', $rec);
+
+  $seen_pvalues=array();
+  $properties=SQLSelect("SELECT * FROM properties WHERE OBJECT_ID='".$id."'");
+  $total=count($properties);
+  for($i=0;$i<$total;$i++) {
+   $p_id=$properties[$i]['ID'];
+   unset($properties[$i]['ID']);
+   $properties[$i]['OBJECT_ID']=$rec['ID'];
+   $properties[$i]['ID']=SQLInsert('properties', $properties[$i]);
+   $p_value=SQLSelectOne("SELECT * FROM pvalues WHERE PROPERTY_ID='".$p_id."'");
+   if ($p_value['ID']) {
+    $seen_pvalues[$p_value['ID']]=1;
+    unset($p_value['ID']);
+    $p_value['PROPERTY_ID']=$properties[$i]['ID'];
+    $p_value['OBJECT_ID']=$rec['ID'];
+    SQLInsert('pvalues', $p_value);
+   }
+  }
+
+  $pvalues=SQLSelect("SELECT * FROM pvalues WHERE OBJECT_ID='".$id."'");
+  $total=count($properties);
+  for($i=0;$i<$total;$i++) {
+   $p_id=$pvalues[$i]['ID'];
+   if ($seen_pvalues[$p_id]) {
+    continue;
+   }
+   unset($pvalues[$i]['ID']);
+   $pvalues[$i]['OBJECT_ID']=$rec['ID'];
+   $pvalues[$i]['ID']=SQLInsert('pvalues', $pvalues[$i]);
+  }
+
+  $methods=SQLSelect("SELECT * FROM methods WHERE OBJECT_ID='".$id."'");
+  $total=count($methods);
+  for($i=0;$i<$total;$i++) {
+   unset($methods[$i]['ID']);
+   $methods[$i]['OBJECT_ID']=$rec['ID'];
+   $methods[$i]['ID']=SQLInsert('methods', $methods[$i]);
+  }
+
+  $this->redirect("?view_mode=edit_objects&id=".$rec['ID']);
+
+ }
+
 /**
 * FrontEnd
 *
@@ -224,6 +287,7 @@ function usual(&$out) {
    $this->class_id=$rec['CLASS_ID'];
    $this->description=$rec['DESCRIPTION'];
    $this->location_id=$rec['LOCATION_ID'];
+   $this->keep_history=$rec['KEEP_HISTORY'];
   } else {
    return false;
   }
@@ -399,7 +463,10 @@ curl_close($ch);
  function callMethod($name, $params=0, $parent=0) {
 
   startMeasure('callMethod');
-  startMeasure('callMethod ('.$name.')');
+
+  $original_method_name=$this->object_title.'.'.$name;
+
+  startMeasure('callMethod ('.$original_method_name.')');
 
  if (!$parent) {
   $id=$this->getMethodByName($name, $this->class_id, $this->id);
@@ -440,6 +507,7 @@ curl_close($ch);
 
    if ($code!='') {
 
+    /*
     if (defined('SETTINGS_DEBUG_HISTORY') && SETTINGS_DEBUG_HISTORY==1) {
      $class_object=SQLSelectOne("SELECT NOLOG FROM classes WHERE ID='".$this->class_id."'");
      if (!$class_object['NOLOG']) {
@@ -462,6 +530,7 @@ curl_close($ch);
       SQLInsert('history', $h);
      }
     }
+    */
 
 
      try {
@@ -475,12 +544,12 @@ curl_close($ch);
 
    }
    endMeasure('callMethod', 1);
-   endMeasure('callMethod ('.$name.')', 1);
+   endMeasure('callMethod ('.$original_method_name.')', 1);
    if ($method['OBJECT_ID'] && $method['CALL_PARENT']==2) {
     $this->callMethod($name, $params, 1);
    }
   } else {
-   endMeasure('callMethod ('.$name.')', 1);
+   endMeasure('callMethod ('.$original_method_name.')', 1);
    endMeasure('callMethod', 1);
    return false;
   }
@@ -601,7 +670,12 @@ curl_close($ch);
     $v['ID']=SQLInsert('pvalues', $v);
   }
 
-  if ($prop['KEEP_HISTORY']>0) {
+  if ($this->keep_history>0) {
+   $prop['KEEP_HISTORY']=$this->keep_history;
+  }
+
+  //if (($prop['KEEP_HISTORY']>0) && (($value!=$old_value) || (defined('KEEP_HISTORY_DUPLICATES') && KEEP_HISTORY_DUPLICATES==1))) {
+  if (($prop['KEEP_HISTORY']>0) && ($value!=$old_value)) {
    startMeasure('DeleteOldHistory');
    SQLExec("DELETE FROM phistory WHERE VALUE_ID='".$v['ID']."' AND TO_DAYS(NOW())-TO_DAYS(ADDED)>".(int)$prop['KEEP_HISTORY']);
    endMeasure('DeleteOldHistory', 1);
@@ -610,101 +684,21 @@ curl_close($ch);
    $h['ADDED']=date('Y-m-d H:i:s');
    $h['VALUE']=$value;
    $h['ID']=SQLInsert('phistory', $h);
-  }
-
-  /*
-   $h=array();
-   $h['ADDED']=date('Y-m-d H:i:s');
-   $h['OBJECT_ID']=$this->id;
-   $h['VALUE_ID']=$v['ID'];
-   $h['OLD_VALUE']=$old_value;
-   $h['NEW_VALUE']=$value;
-   SQLInsert('history', $h);
-  */
-
-  //commands, owproperties, snmpproperties, zwave_properties, mqtt
-  $tables=array('commands', 'owproperties', 'snmpproperties', 'zwave_properties', 'mqtt');
-  if (!is_array($no_linked) && $no_linked) {
-   $no_linked=array();
-   foreach($tables as $t) {
-    $no_linked[$k]='0';
-   }
-  } elseif (is_array($no_linked)) {
-   foreach($tables as $t) {
-    if (!isset($no_linked[$k])) {
-     $no_linked[$k]='1';
-    }
-   }   
-  } else {
-   $no_linked=array();
-   foreach($tables as $t) {
-    $no_linked[$k]='1';
+  } elseif (($prop['KEEP_HISTORY']>0) && ($value==$old_value)) {
+   $tmp_history=SQLSelect("SELECT * FROM phistory WHERE VALUE_ID='".$v['ID']."' ORDER BY ID DESC LIMIT 2");
+   $prev_value=$tmp_history[0]['VALUE'];
+   $prev_prev_value=$tmp_history[1]['VALUE'];
+   if ($prev_value==$prev_prev_value) {
+    $tmp_history[0]['ADDED']=date('Y-m-d H:i:s');
+    SQLUpdate('phistory', $tmp_history[0]);
+   } else {
+    $h=array();
+    $h['VALUE_ID']=$v['ID'];
+    $h['ADDED']=date('Y-m-d H:i:s');
+    $h['VALUE']=$value;
+    $h['ID']=SQLInsert('phistory', $h);
    }
   }
-
-  foreach($tables as $t) {
-   if ($no_linked[$t]=='') {
-    $no_linked[$t]='1';
-   }
-  }
-
-  if ($no_linked['commands']!='') {
-   $commands=SQLSelect("SELECT * FROM commands WHERE LINKED_OBJECT LIKE '".DBSafe($this->object_title)."' AND LINKED_PROPERTY LIKE '".DBSafe($property)."' AND ".$no_linked['commands']);
-   $total=count($commands);
-   for($i=0;$i<$total;$i++) {
-    $commands[$i]['CUR_VALUE']=$value;
-    SQLUpdate('commands', $commands[$i]);
-   }
-  }
-
-  if ($no_linked['owproperties']!='' && file_exists(DIR_MODULES.'/onewire/onewire.class.php')) {
-   $owp=SQLSelect("SELECT ID FROM owproperties WHERE LINKED_OBJECT LIKE '".DBSafe($this->object_title)."' AND LINKED_PROPERTY LIKE '".DBSafe($property)."' AND ".$no_linked['owproperties']);
-   $total=count($owp);
-   if ($total) {
-    include_once(DIR_MODULES.'/onewire/onewire.class.php');
-    $on_wire=new onewire();
-    for($i=0;$i<$total;$i++) {
-     $on_wire->setProperty($owp[$i]['ID'], $value);
-    }
-   }
-  }
-
-  if ($no_linked['snmpproperties']!='' && file_exists(DIR_MODULES.'/snmpdevices/snmpdevices.class.php')) {
-   $snmpdevices=SQLSelect("SELECT ID FROM snmpproperties WHERE LINKED_OBJECT LIKE '".DBSafe($this->object_title)."' AND LINKED_PROPERTY LIKE '".DBSafe($property)."' AND ".$no_linked['snmpproperties']);
-   $total=count($snmpdevices);
-   if ($total) {
-    include_once(DIR_MODULES.'/snmpdevices/snmpdevices.class.php');
-    $snmp=new snmpdevices();
-    for($i=0;$i<$total;$i++) {
-     $snmp->setProperty($snmpdevices[$i]['ID'], $value);
-    }
-   }
-  }
-
-  if ($no_linked['zwave_properties']!='' && file_exists(DIR_MODULES.'/zwave/zwave.class.php')) {
-   $zwave_properties=SQLSelect("SELECT ID FROM zwave_properties WHERE LINKED_OBJECT LIKE '".DBSafe($this->object_title)."' AND LINKED_PROPERTY LIKE '".DBSafe($property)."' AND ".$no_linked['zwave_properties']);
-   $total=count($zwave_properties);
-   if ($total) {
-    include_once(DIR_MODULES.'/zwave/zwave.class.php');
-    $zwave=new zwave();
-    for($i=0;$i<$total;$i++) {
-     $zwave->setProperty($zwave_properties[$i]['ID'], $value);
-    }
-   }
-  }
-
-  if ($no_linked['mqtt']!='' && file_exists(DIR_MODULES.'/mqtt/mqtt.class.php')) {
-   $mqtt_properties=SQLSelect("SELECT ID FROM mqtt WHERE LINKED_OBJECT LIKE '".DBSafe($this->object_title)."' AND LINKED_PROPERTY LIKE '".DBSafe($property)."' AND ".$no_linked['mqtt']);
-   $total=count($mqtt_properties);
-   if ($total) {
-    include_once(DIR_MODULES.'/mqtt/mqtt.class.php');
-    $mqtt=new mqtt();
-    for($i=0;$i<$total;$i++) {
-     $mqtt->setProperty($mqtt_properties[$i]['ID'], $value);
-    }
-   }
-  }
-
 
   if ($prop['ONCHANGE']) {
    global $property_linked_history;
@@ -717,8 +711,46 @@ curl_close($ch);
     $this->callMethod($prop['ONCHANGE'], $params);
     unset($property_linked_history[$property][$prop['ONCHANGE']]);
    }
-
   }
+
+  if ($v['LINKED_MODULES']) { // TO-DO !
+   if (!is_array($no_linked) && $no_linked) {
+    return;
+   } elseif (!is_array($no_linked)) {
+    $no_linked=array();
+   }
+
+
+   $tmp=explode(',', $v['LINKED_MODULES']);
+   $total=count($tmp);
+
+
+   for($i=0;$i<$total;$i++) {
+    $linked_module=trim($tmp[$i]);
+
+    if (isset($no_linked[$linked_module])) {
+     continue;
+    }
+    if (file_exists(DIR_MODULES.$linked_module.'/'.$linked_module.'.class.php')) {
+     include_once(DIR_MODULES.$linked_module.'/'.$linked_module.'.class.php');
+     $module_object=new $linked_module;
+     if (method_exists($module_object, 'propertySetHandle')) {
+      $module_object->propertySetHandle($this->object_title, $property, $value);
+     }
+    }
+   }
+  }
+
+  /*
+   $h=array();
+   $h['ADDED']=date('Y-m-d H:i:s');
+   $h['OBJECT_ID']=$this->id;
+   $h['VALUE_ID']=$v['ID'];
+   $h['OLD_VALUE']=$old_value;
+   $h['NEW_VALUE']=$value;
+   SQLInsert('history', $h);
+  */
+
 
   endMeasure('setProperty ('.$property.')', 1);
   endMeasure('setProperty', 1);
@@ -763,6 +795,7 @@ objects - Objects
  objects: CLASS_ID int(10) NOT NULL DEFAULT '0'
  objects: DESCRIPTION text
  objects: LOCATION_ID int(10) NOT NULL DEFAULT '0'
+ objects: KEEP_HISTORY int(10) NOT NULL DEFAULT '0'
 EOD;
   parent::dbInstall($data);
  }

@@ -90,6 +90,10 @@
   }
   outHash($rec, $out);
 
+  if ($out['XML']) {
+   $this->xml=$out['XML'];
+  }
+
 
   $run_time=array('00', '00');
   if ($rec['RUN_TIME']) {
@@ -137,6 +141,10 @@
     $d['SELECTED']=1;
    }
    $out['DAYS'][]=$d;
+  }
+
+  if ($rec['CATEGORY_ID']) {
+   $out['OTHER_SCRIPTS']=SQLSelect("SELECT ID, TITLE FROM scripts WHERE CATEGORY_ID='".(int)$rec['CATEGORY_ID']."' ORDER BY TITLE");
   }
 
 

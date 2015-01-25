@@ -20,14 +20,14 @@ include_once(DIR_MODULES.'rss_channels/rss_channels.class.php');
 
 $rss_ch = new rss_channels();
 
+echo date("H:i:s") . " running " . basename(__FILE__) . "\n";
+
 $checked_time=0;
 while(1) 
 {
-   echo date("H:i:s") . " running " . basename(__FILE__) . "\n";
-
    if (time()-$checked_time>10) {
     $checked_time=time();   
-    setGlobal((str_replace('.php', '', basename(__FILE__))).'Run', time());
+    setGlobal((str_replace('.php', '', basename(__FILE__))).'Run', time(), 1);
     //updating RSS channels
     $to_update = SQLSelect("SELECT ID, TITLE FROM rss_channels WHERE NEXT_UPDATE <= NOW() LIMIT 1");
     $total = count($to_update);

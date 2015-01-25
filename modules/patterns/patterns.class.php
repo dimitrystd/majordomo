@@ -131,12 +131,74 @@ function admin(&$out) {
   if ($this->view_mode=='edit_patterns') {
    $this->edit_patterns($out, $this->id);
   }
+
+  if ($this->view_mode=='clone' && $this->id) {
+   $this->clone_pattern($this->id);
+  }
+
+  if ($this->view_mode=='moveup' && $this->id) {
+   $this->reorder_items($this->id, 'up');
+   $this->redirect("?");
+  }
+  if ($this->view_mode=='movedown' && $this->id) {
+   $this->reorder_items($this->id, 'down');
+   $this->redirect("?");
+  }
+
+
   if ($this->view_mode=='delete_patterns') {
    $this->delete_patterns($this->id);
    $this->redirect("?");
   }
  }
 }
+
+ function reorder_items($id, $direction='up') {
+  $element=SQLSelectOne("SELECT * FROM patterns WHERE ID='".(int)$id."'");
+  if ($element['PARENT_ID']) {
+   $all_elements=SQLSelect("SELECT * FROM patterns WHERE PARENT_ID=".$element['PARENT_ID']." ORDER BY PRIORITY DESC, TITLE");
+  } else {
+   $all_elements=SQLSelect("SELECT * FROM patterns WHERE PARENT_ID=0 ORDER BY PRIORITY DESC, TITLE");
+  }
+  $total=count($all_elements);
+  for($i=0;$i<$total;$i++) {
+   if ($all_elements[$i]['ID']==$id && $i>0 && $direction=='up') {
+    $tmp=$all_elements[$i-1];
+    $all_elements[$i-1]=$all_elements[$i];
+    $all_elements[$i]=$tmp;
+    break;
+   }
+   if ($all_elements[$i]['ID']==$id && $i<($total-1) && $direction=='down') {
+    $tmp=$all_elements[$i+1];
+    $all_elements[$i+1]=$all_elements[$i];
+    $all_elements[$i]=$tmp;
+    break;
+   }
+  }
+  $priority=($total)*10;
+  for($i=0;$i<$total;$i++) {
+   $all_elements[$i]['PRIORITY']=$priority;
+   $priority-=10;
+   SQLUpdate('patterns', $all_elements[$i]);
+  }
+ }
+
+/**
+* Title
+*
+* Description
+*
+* @access public
+*/
+ function clone_pattern($id) {
+  $rec=SQLSelectOne("SELECT * FROM patterns WHERE ID='".(int)$id."'");
+  $rec['TITLE'].=' (copy)';
+  unset($rec['ID']);
+  $rec['LOG']='';
+  $rec['ID']=SQLInsert('patterns', $rec);
+  $this->redirect("?view_mode=edit_patterns&id=".$rec['ID']);
+ }
+
 /**
 * FrontEnd
 *
@@ -171,32 +233,49 @@ function usual(&$out) {
 *
 * @access public
 */
- function checkAllPatterns() {
+ function checkAllPatterns($from_user_id=0) {
   global $session;
 
   $current_context=context_getcurrent();
 
-  $patterns=SQLSelect("SELECT * FROM patterns WHERE 1 AND PARENT_ID='".(int)$current_context."' ORDER BY PRIORITY DESC, TITLE");
-  $total=count($patterns);
-  $res=0;
-  for($i=0;$i<$total;$i++) {
-   $matched=$this->checkPattern($patterns[$i]['ID']);
-   if ($matched) {
-    $res=1;
-    if ($patterns[$i]['IS_LAST']) {
-     break;
+  //DebMes("current context:".$current_context);
+
+  if ($from_user_id && preg_match('/^ext(\d+)/', $current_context, $m)) {
+
+   $res=$this->checkExtPatterns($m[1]);
+
+  } else {
+
+   $patterns=SQLSelect("SELECT * FROM patterns WHERE 1 AND PARENT_ID='".(int)$current_context."' ORDER BY PRIORITY DESC, TITLE");
+   $total=count($patterns);
+   $res=0;
+   for($i=0;$i<$total;$i++) {
+    $matched=$this->checkPattern($patterns[$i]['ID']);
+    if ($matched) {
+     $res=1;
+     if ($patterns[$i]['IS_LAST']) {
+      break;
+     }
     }
    }
+
   }
+
+
 
   if (!$res) {
    $patterns=SQLSelect("SELECT patterns.* FROM patterns LEFT JOIN patterns AS p2 ON p2.ID=patterns.PARENT_ID WHERE p2.IS_COMMON_CONTEXT=1 AND patterns.PARENT_ID!=0 ORDER BY patterns.ID");
    $total=count($patterns);
    $res=0;
    for($i=0;$i<$total;$i++) {
-    $this->checkPattern($patterns[$i]['ID']);
+    $res=$this->checkPattern($patterns[$i]['ID']);
+   }
+   if (!$res && $from_user_id) {
+    $res=$this->checkExtPatterns(0);
    }
   }
+
+  return $res;
 
  }
 
@@ -204,6 +283,12 @@ function usual(&$out) {
 
   function getAvailableActions() {
    $current_context=context_getcurrent();
+
+   if (preg_match('/^ext(\d+)/', $current_context, $m)) {
+    $res=$this->getAvailableActionsExt($m[1]);
+    return $res;
+   }
+
    $patterns=SQLSelect("SELECT * FROM patterns WHERE 1 AND PARENT_ID='".(int)$current_context."' AND IS_COMMON_CONTEXT!=1 ORDER BY ID");
    $total=count($patterns);
    if (!$total) {
@@ -213,10 +298,185 @@ function usual(&$out) {
    for($i=0;$i<$total;$i++) {
     $res[]=$patterns[$i]['TITLE'];
    }
-
    return $res;
 
   }
+
+
+  function checkExtPatterns($ext_context_id) {
+
+   $message=SQLSelectOne("SELECT MESSAGE FROM shouts ORDER BY ID DESC LIMIT 1");
+   $phrase=trim($message['MESSAGE']);
+   if (!$phrase) {
+    return 0;
+   }
+
+   $this->getConnectDetails();
+   if ($this->connect_username && $this->connect_password) {
+    //check external patterns
+    $data=array();
+    $data['mode']='check';
+    $data['context_id']=$ext_context_id;
+    $data['phrase']=$phrase;
+
+    // POST TO SERVER
+    $url = 'http://connect.smartliving.ru/patterns/';
+    $fields = array(
+     'data' => urlencode(serialize($data))
+    );
+    //DebMes("Sending data: ".serialize($data));
+
+    //url-ify the data for the POST
+    foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
+    rtrim($fields_string, '&');
+
+    //open connection
+    $ch = curl_init();
+    //set the url, number of POST vars, POST data
+    curl_setopt($ch,CURLOPT_URL, $url);
+    curl_setopt($ch,CURLOPT_POST, count($fields));
+    curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+    curl_setopt($ch,CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch,CURLOPT_CONNECTTIMEOUT, 30);
+    curl_setopt($ch,CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch,CURLOPT_HTTPAUTH, CURLAUTH_BASIC ) ;
+    curl_setopt($ch,CURLOPT_USERPWD, $this->connect_username.":".$this->connect_password); 
+    //execute post
+    $result = curl_exec($ch);
+    //close connection
+    curl_close($ch);
+
+    DebMes("External context response: ".$result);
+
+    $data=unserialize($result);
+
+    if ($data['MATCHED_CONTEXT']) {
+
+     if (is_array($data['PHRASES'])) {
+      foreach($data['PHRASES'] as $details) {
+       say($details['PHRASE'], (int)$details['LEVEL']);
+      }
+     }
+
+     $data['TIMEOUT_CODE']='';
+     if (is_array($data['TIMEOUT_PHRASES'])) {
+      foreach($data['TIMEOUT_PHRASES'] as $details) {
+       $data['TIMEOUT_CODE'].='say("'.$details['PHRASE'].'", "'.(int)$details['LEVEL'].'");';
+      }
+     }
+
+     if (is_array($data['URLS'])) {
+      foreach($data['URLS'] as $url) {
+       $rec=array();
+       $rec['EVENT_TYPE']='openurl';
+       $rec['WINDOW']='alice';
+       $rec['TERMINAL_TO']='*';
+       $rec['ADDED']=date('Y-m-d H:i:s');
+       $rec['EXPIRE']=date('Y-m-d H:i:s', time()+10);
+       $rec['DETAILS']=$url;
+       $rec['ID']=SQLInsert('events', $rec);
+      }
+     }
+
+     if ($data['MEDIA_URL']) {
+      playMedia($data['MEDIA_URL']);
+     }
+
+     context_activate_ext($data['NEW_CONTEXT'], (int)$data['TIMEOUT'], $data['TIMEOUT_CODE'], (int)$data['TIMEOUT_CONTEXT_ID']);
+
+     return $data['MATCHED_CONTEXT'];
+
+    }
+
+   }
+   return 0;
+  }
+
+
+  function getAvailableActionsExt($ext_context_id) {
+   $this->getConnectDetails();  
+   if ($this->connect_username && $this->connect_password) {
+    //check external actions
+    $data=array();
+    $data['mode']='actions';
+    $data['context_id']=$ext_context_id;
+
+    // POST TO SERVER
+    $url = 'http://connect.smartliving.ru/patterns/';
+    $fields = array(
+     'data' => urlencode(serialize($data))
+    );
+
+    //url-ify the data for the POST
+    foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
+    rtrim($fields_string, '&');
+
+    //open connection
+    $ch = curl_init();
+    //set the url, number of POST vars, POST data
+    curl_setopt($ch,CURLOPT_URL, $url);
+    curl_setopt($ch,CURLOPT_POST, count($fields));
+    curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+    curl_setopt($ch,CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch,CURLOPT_CONNECTTIMEOUT, 30);
+    curl_setopt($ch,CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch,CURLOPT_HTTPAUTH, CURLAUTH_BASIC ) ;
+    curl_setopt($ch,CURLOPT_USERPWD, $this->connect_username.":".$this->connect_password); 
+    //execute post
+    $result = curl_exec($ch);
+    //close connection
+    curl_close($ch);
+    $data=unserialize($result);
+
+    DebMes("External actions response: ".$result);
+
+    if (is_array($data['ACTIONS'])) {
+     return $data['ACTIONS'];
+    }
+   }
+   return 0;
+  }
+
+
+  function getConnectDetails() {
+   if (!$this->connect_username && !$this->connect_password) {
+    include_once(DIR_MODULES.'connect/connect.class.php');
+    $cn=new connect();
+    $cn->getConfig();
+    if ($cn->config['CONNECT_USERNAME'] && $cn->config['CONNECT_PASSWORD']) {
+     $this->connect_username=$cn->config['CONNECT_USERNAME'];
+     $this->connect_password=$cn->config['CONNECT_PASSWORD'];
+    } else {
+     $this->connect_username='anonymous';
+     $this->connect_password='';
+    }
+   }
+  }
+
+
+ function runPatternAction($id, $matches=array(), $original='') {
+  $rec=SQLSelectOne("SELECT * FROM patterns WHERE ID='".(int)$id."'");   
+
+     global $noPatternMode;
+     $noPatternMode=1;
+     if ($rec['SCRIPT_ID']) {
+      runScript($rec['SCRIPT_ID'], $matches);
+     } elseif ($rec['SCRIPT']) {
+
+                  try {
+                   $code=$rec['SCRIPT'];
+                   $success=eval($code);
+                   if ($success===false) {
+                    DebMes("Error in pattern code: ".$code);
+                   }
+                  } catch(Exception $e){
+                   DebMes('Error: exception '.get_class($e).', '.$e->getMessage().'.');
+                  }
+
+     }
+    $noPatternMode=0;
+
+ }
 
 /**
 * Title
@@ -229,6 +489,8 @@ function usual(&$out) {
   global $session;
   global $pattern_matched;
 
+
+  $this_pattern_matched=0;
 
   $rec=SQLSelectOne("SELECT * FROM patterns WHERE ID='".(int)$id."'");
 
@@ -283,10 +545,14 @@ function usual(&$out) {
       $is_common=(int)$parent_rec['IS_COMMON_CONTEXT'];
      }
 
+     if (context_getcurrent()) {
+      $history=context_get_history().' '.$history;
+     }
+
      if ($rec['IS_CONTEXT']) {
-      context_activate($rec['ID']);
+      context_activate($rec['ID'], 1, $history);
      } elseif ($rec['MATCHED_CONTEXT_ID']) {
-      context_activate($rec['MATCHED_CONTEXT_ID']);
+      context_activate($rec['MATCHED_CONTEXT_ID'], 0, $history);
      } elseif (!$is_common) {
       context_activate(0);
      }
@@ -294,37 +560,35 @@ function usual(&$out) {
      $rec['LOG']=date('Y-m-d H:i:s').' Pattern matched'."\n".$rec['LOG'];
      $rec['EXECUTED']=time();
      SQLUpdate('patterns', $rec);
-     global $noPatternMode;
-     $noPatternMode=1;
      $pattern_matched=1;
-     if ($rec['SCRIPT_ID']) {
-      runScript($rec['SCRIPT_ID'], $matches);
-     } elseif ($rec['SCRIPT']) {
+     $this_pattern_matched=1;
 
-                  try {
-                   $code=$rec['SCRIPT'];
-                   $success=eval($code);
-                   if ($success===false) {
-                    DebMes("Error in pattern code: ".$code);
-                   }
-                  } catch(Exception $e){
-                   DebMes('Error: exception '.get_class($e).', '.$e->getMessage().'.');
-                  }
+     $sub_patterns_matched=0;
 
+     if ($rec['IS_CONTEXT']) {
+      $sub_patterns=SQLSelect("SELECT ID, IS_LAST FROM patterns WHERE PARENT_ID='".$rec['ID']."'");
+      $total=count($sub_patterns);
+      for($i=0;$i<$total;$i++) {
+       if ($this->checkPattern($sub_patterns[$i]['ID'])) {
+        $sub_patterns_matched=1;
+        if ($sub_patterns[$i]['IS_LAST']) {
+         break;
+        }
+       }
+      }
      }
-    $noPatternMode=0;
+
+     if (!$sub_patterns_matched) {
+      $this->runPatternAction($rec['ID'], $matches, $history);
+     }
+
    }
 
+  } else {
+   $this_pattern_matched=0;
   }
 
-
- if ($pattern_matched) {
-  return 1;
- } else {
-  return 0;
- }
-
-
+  return $this_pattern_matched;
  }
 
 /**

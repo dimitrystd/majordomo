@@ -223,9 +223,11 @@ function admin(&$out) {
      $device->id=$i;
      $device->type=$device->data->deviceTypeString->value;
 
+     /*
      if ($device->type=='Static PC Controller') {
       continue;
      }
+     */
 
      //echo $device->data->NodeId->value."<hr>";
 
@@ -260,6 +262,8 @@ function admin(&$out) {
      continue;
     }
    }
+
+   $seen_devices=array();
    $total=count($devices);
    //echo "Total: ".$total."<br>";
    for($i=0;$i<$total;$i++) {
@@ -319,18 +323,43 @@ function admin(&$out) {
     } else {
      $rec['CLASS_METER']=0;
     }
+    if (isset($devices[$i]->commandClasses->{'112'}->data)) {
+     $rec['CLASS_CONFIG']=1;
+    } else {
+     $rec['CLASS_CONFIG']=0;
+    }
     if (isset($devices[$i]->commandClasses->{'128'}->data)) {
      $rec['CLASS_BATTERY']=1;
     } else {
      $rec['CLASS_BATTERY']=0;
+    }
+    if (isset($devices[$i]->commandClasses->{'156'}->data)) {
+     $rec['CLASS_SENSOR_ALARM']=1;
+    } else {
+     $rec['CLASS_SENSOR_ALARM']=0;
+    }
+    if (is_object($devices[$i]->commandClasses->{'45'}) || is_object($devices[$i]->commandClasses->{'43'})) {
+     $rec['CLASS_SCENE_CONTROLLER']=1;
+    } else {
+     $rec['CLASS_SCENE_CONTROLLER']=0;
     }
     if (!$rec['ID']) {
      $rec['ID']=SQLInsert('zwave_devices', $rec);
     } else {
      SQLUpdate('zwave_devices', $rec);
     }
+    $seen_devices[]=$rec['ID'];
     $this->pollDevice($rec['ID'], $devices[$i]);
 
+   }
+
+   global $remove_not_found;
+   if (count($seen_devices)>0 && $remove_not_found) {
+    $devices=SQLSelect("SELECT ID FROM zwave_devices WHERE ID NOT IN (".implode(',', $seen_devices).")");
+    $total=count($devices);
+    for($i=0;$i<$total;$i++) {
+     $this->delete_zwave_devices($devices[$i]['ID']);
+    }
    }
 
    return $data->updateTime;
@@ -361,7 +390,16 @@ function admin(&$out) {
      $data=$this->apiCall('/ZWaveAPI/Run/devices['.$device['NODE_ID'].'].instances['.$device['INSTANCE_ID'].'].commandClasses[38].Set('.$value.')');
     }
    }
-   if ($rec['TITLE']=='Thermostat mode' && $device['CLASS_THERMOSTAT']) {
+   if ($rec['TITLE']=='LevelDuration command (level, duration)') {
+    $tmp=explode(',', $value);
+    $tmp[0]=(int)trim($tmp[0]);
+    $tmp[1]=(int)trim($tmp[1]);
+    if ($device['CLASS_SWITCH_MULTILEVEL']) {
+     $data=$this->apiCall('/ZWaveAPI/Run/devices['.$device['NODE_ID'].'].instances['.$device['INSTANCE_ID'].'].commandClasses[38].Set('.$tmp[0].','.$tmp[1].')');
+    }
+   }
+   if ($device['CLASS_THERMOSTAT'] && $rec['TITLE']=='Thermostat mode') {
+   /*
     $data=$this->apiCall('/ZWaveAPI/Run/devices['.$device['NODE_ID'].'].instances['.$device['INSTANCE_ID'].']');
     $mode='';
     $av_modes=$data->commandClasses->{"64"}->data;
@@ -375,6 +413,28 @@ function admin(&$out) {
     }
     if ($mode) {
      $data=$this->apiCall('/ZWaveAPI/Run/devices['.$device['NODE_ID'].'].instances['.$device['INSTANCE_ID'].'].commandClasses[64].Set('.$mode.')');
+    }
+    */
+    $data=$this->apiCall('/ZWaveAPI/Run/devices['.$device['NODE_ID'].'].instances['.$device['INSTANCE_ID'].'].commandClasses[64].Set('.$value.')');
+   }
+   if ($device['CLASS_THERMOSTAT'] && $rec['TITLE']=='ThermostatFanMode') {
+    $data=$this->apiCall('/ZWaveAPI/Run/devices['.$device['NODE_ID'].'].instances['.$device['INSTANCE_ID'].'].commandClasses[68].Set('.$value.')');
+   }
+   if ($device['CLASS_THERMOSTAT'] && preg_match('/ThermostatSetPoint (.+)/is', $rec['TITLE'], $m)) {
+    $mode_name=$m[1];
+    $data=$this->apiCall('/ZWaveAPI/Run/devices['.$device['NODE_ID'].'].instances['.$device['INSTANCE_ID'].']');
+    $mode='';
+    $av_modes=$data->commandClasses->{"67"}->data;
+    for($i=0;$i<255;$i++) {
+     if (isset($av_modes->{"$i"}->modename)) {
+      if ($av_modes->{"$i"}->modename->value==$mode_name) {
+       $mode=$i;
+       break;
+      }
+     }
+    }
+    if ($mode) {
+     $data=$this->apiCall('/ZWaveAPI/Run/devices['.$device['NODE_ID'].'].instances['.$device['INSTANCE_ID'].'].commandClasses[67].Set('.$mode.', '.$value.')');
     }
    }
 
@@ -397,6 +457,26 @@ function admin(&$out) {
     $this->latestPoll=$latest;
    }
   } else {
+
+   //sending update request for some properties
+   $properties=SQLSelect("SELECT zwave_properties.*,zwave_devices.NODE_ID, zwave_devices.INSTANCE_ID FROM zwave_properties LEFT JOIN zwave_devices ON zwave_properties.DEVICE_ID=zwave_devices.ID WHERE UPDATE_PERIOD>0 AND (IsNull(zwave_properties.NEXT_UPDATE) OR zwave_properties.NEXT_UPDATE<='".date('Y-m-d H:i:s')."')");
+   $total=count($properties);
+   $get_codes_added=array();
+   for($i=0;$i<$total;$i++) {
+    $properties[$i]['NEXT_UPDATE']=date('Y-m-d H:i:s', time()+$properties[$i]['UPDATE_PERIOD']);
+    if ($properties[$i]['COMMAND_CLASS'] && !$get_codes_added[$properties[$i]['NODE_ID'].'/'.$properties[$i]['INSTANCE_ID']]) {
+     $get_codes_added[$properties[$i]['NODE_ID'].'/'.$properties[$i]['INSTANCE_ID']]=1;
+     $cmd='/ZWaveAPI/Run/devices['.$properties[$i]['NODE_ID'].'].instances['.$properties[$i]['INSTANCE_ID'].'].commandClasses['.$properties[$i]['COMMAND_CLASS'].'].Get()';
+     echo "Command: ".$cmd."\n";
+     $data=$this->apiCall($cmd);
+    }
+    unset($properties[$i]['NODE_ID']);
+    unset($properties[$i]['INSTANCE_ID']);
+    SQLUpdate('zwave_properties', $properties[$i]);
+   }
+
+
+   //polling network for updates
    $data=$this->apiCall('/ZWaveAPI/Data/'.$this->latestPoll);
    $latest=$data->updateTime;
    if (!$latest) {
@@ -426,6 +506,17 @@ function admin(&$out) {
    }
   }
  }
+
+ function propertySetHandle($object, $property, $value) {
+   $zwave_properties=SQLSelect("SELECT ID FROM zwave_properties WHERE LINKED_OBJECT LIKE '".DBSafe($object)."' AND LINKED_PROPERTY LIKE '".DBSafe($property)."'");
+   $total=count($zwave_properties);
+   if ($total) {
+    for($i=0;$i<$total;$i++) {
+     $this->setProperty($zwave_properties[$i]['ID'], $value);
+    }
+   }
+ }
+
  /**
  * Title
  *
@@ -434,9 +525,15 @@ function admin(&$out) {
  * @access public
  */
   function pollDevice($device_id, $data=0) {
+
    $rec=SQLSelectOne("SELECT * FROM zwave_devices WHERE ID='".$device_id."'");
 
+   $rec_updated=0;
+
+   $comments=array();
+   $updatedList=array();
    $properties=array();
+   $command_classes=array();
 
    if (!$data) {
     $data=$this->apiCall('/ZWaveAPI/Run/devices['.$rec['NODE_ID'].'].instances['.$rec['INSTANCE_ID'].']');
@@ -446,23 +543,56 @@ function admin(&$out) {
     return 0;
    }
 
+   if ($_GET['debug']) {
+    //echo $data->updateTime;exit;
+    var_dump($data);
+   }
+
+   $updateTime=0;
+
+   if (!$rec['RAW_DATA']) {
+    $rec_updated=1;
+   }
+
+   $rec['RAW_DATA']=json_encode($data);
+   $rec['SENSOR_VALUE']='';
+
+   if ($data->data->updateTime) {
+    $updateTime=$data->data->updateTime;
+   }
+
    if ($rec['CLASS_BASIC']) {
     $value=$data->commandClasses->{"32"}->data->value;
     if ($value!==$rec['BASIC']) {
      $rec['BASIC']=$value;
-     SQLUpdate('zwave_devices', $rec);
+     $rec_updated=1;
     }
+    $command_classes['Basic']=32;
     $properties['Basic']=$rec['BASIC'];
+    $updatedList['Basic']=$data->commandClasses->{"32"}->data->{"updateTime"};
+    if ($data->commandClasses->{"32"}->data->{"updateTime"}>$updateTime) {
+     $updateTime=$data->commandClasses->{"32"}->data->{"updateTime"};
+    }
    }
 
    if ($rec['CLASS_SENSOR_BINARY']) {
-    // ...
-    $value=(int)$data->commandClasses->{"48"}->data->level->value;
+
+    $sensor_data=$data->commandClasses->{"48"}->data;
+    if (isset($data->commandClasses->{"48"}->data->{"1"})) {
+     $sensor_data=$data->commandClasses->{"48"}->data->{"1"};
+    }
+    $value=(int)$sensor_data->level->value;
+
     if ($value!==$rec['LEVEL']) {
      $rec['LEVEL']=$value;
-     SQLUpdate('zwave_devices', $rec);
+     $rec_updated=1;
     }
     $properties['Level']=$rec['LEVEL'];
+    $command_classes['Level']=48;
+    $updatedList['Level']=$sensor_data->{"updateTime"};
+    if ($sensor_data->{"updateTime"}>$updateTime) {
+     $updateTime=$sensor_data->{"updateTime"};
+    }
    }
 
    if ($rec['CLASS_SENSOR_MULTILEVEL']) {
@@ -472,72 +602,290 @@ function admin(&$out) {
     for($i=0;$i<255;$i++) {
      if (isset($data->commandClasses->{"49"}->data->{"$i"})) {
       $sensor=$data->commandClasses->{"49"}->data->{"$i"};
-      $values[]=$sensor->sensorTypeString->value.': '.$sensor->val->value.$sensor->scaleString->value;
-      $properties[$sensor->sensorTypeString->value.', '.$sensor->scaleString->value]=$sensor->val->value;
+      $values[]=trim($sensor->sensorTypeString->value).': '.$sensor->val->value.$sensor->scaleString->value;
+      if (trim($sensor->sensorTypeString->value)) {
+       $prop_name=trim($sensor->sensorTypeString->value).', '.$sensor->scaleString->value;
+      } else {
+       $prop_name="Sensor $i";
+      }
+      if ($properties[$prop_name]) {
+       $prop_name.=' (1)';
+      }
+      $properties[$prop_name]=$sensor->val->value;
+      $command_classes[$prop_name]=49;
+      $updatedList[$prop_name]=$data->commandClasses->{"49"}->data->{"$i"}->{"updateTime"};
+      if ($data->commandClasses->{"49"}->data->{"$i"}->{"updateTime"}>$updateTime) {
+       $updateTime=$data->commandClasses->{"49"}->data->{"$i"}->{"updateTime"};
+      }
      }
     }
     $value=implode('; ', $values);
     if ($value!=$rec['SENSOR_VALUE']) {
-     $rec['SENSOR_VALUE']=$value;
-     SQLUpdate('zwave_devices', $rec);
+     $rec['SENSOR_VALUE'].=$value.';';
+     $rec_updated=1;
     }
-
    }
-
-   if ($rec['CLASS_THERMOSTAT']) {
-    $value=$data->commandClasses->{"64"}->data->{$data->commandClasses->{"64"}->data->mode->value}->modeName->value;
-    if ($value!=$rec['MODE_VALUE']) {
-     $rec['MODE_VALUE']=$value;
-     SQLUpdate('zwave_devices', $rec);
-    }
-    $properties['Thermostat mode']=$rec['MODE_VALUE'];
-   }
-
 
    if ($rec['CLASS_SWITCH_BINARY']) {
     $value=(int)$data->commandClasses->{"37"}->data->level->value;
     if ($value!==$rec['LEVEL']) {
      $rec['LEVEL']=$value;
-     SQLUpdate('zwave_devices', $rec);
+     $rec_updated=1;
     }
     $properties['Level']=$rec['LEVEL'];
+    $command_classes['Level']=37;
+    $updatedList['Level']=$data->commandClasses->{"37"}->data->{"updateTime"};
+    if ($data->commandClasses->{"37"}->data->{"updateTime"}>$updateTime) {
+     $updateTime=$data->commandClasses->{"37"}->data->{"updateTime"};
+    }
    }
    if ($rec['CLASS_SWITCH_MULTILEVEL']) {
     $value=(int)$data->commandClasses->{"38"}->data->level->value;
     if ($value!==$rec['LEVEL']) {
      $rec['LEVEL']=$value;
-     SQLUpdate('zwave_devices', $rec);
+     $rec_updated=1;
     }
     $properties['Level']=$rec['LEVEL'];
+    $command_classes['Level']=38;
+    $updatedList['Level']=$data->commandClasses->{"38"}->data->{"updateTime"};
+    if ($data->commandClasses->{"38"}->data->{"updateTime"}>$updateTime) {
+     $updateTime=$data->commandClasses->{"38"}->data->{"updateTime"};
+    }
+    $properties['LevelDuration command (level, duration)']='';
    }
    if ($rec['CLASS_BATTERY']) {
     $value=(int)$data->commandClasses->{"128"}->data->last->value;
     if ($value!=$rec['BATTERY_LEVEL']) {
      $rec['BATTERY_LEVEL']=$value;
-     SQLUpdate('zwave_devices', $rec);
+     $rec_updated=1;
     }
+    $command_classes['Battery']=128;
     $properties['Battery']=$rec['BATTERY_LEVEL'];
+    $updatedList['Battery']=$data->commandClasses->{"128"}->data->{"updateTime"};
+    if ($data->commandClasses->{"128"}->data->{"updateTime"}>$updateTime) {
+     $updateTime=$data->commandClasses->{"128"}->data->{"updateTime"};
+    }
    }
 
    if ($rec['CLASS_METER']) {
-    // ...
+    // ... 50
+    $values=array();
+    for($i=0;$i<255;$i++) {
+     if (isset($data->commandClasses->{"50"}->data->{"$i"})) {
+      $sensor=$data->commandClasses->{"50"}->data->{"$i"};
+      $values[]=trim($sensor->sensorTypeString->value).': '.$sensor->val->value.' '.$sensor->scaleString->value;
+      if (trim($sensor->sensorTypeString->value)) {
+       $prop_name=trim($sensor->sensorTypeString->value).', '.$sensor->scaleString->value;
+      } else {
+       $prop_name="Meter $i";
+      }
+      if ($properties[$prop_name]) {
+       $prop_name.=' (1)';
+      }
+      $command_classes[$prop_name]=50;
+      $properties[$prop_name]=$sensor->val->value;
+      $updatedList[$prop_name]=$data->commandClasses->{"50"}->data->{"$i"}->{"updateTime"};
+      if ($data->commandClasses->{"50"}->data->{"$i"}->{"updateTime"}>$updateTime) {
+       $updateTime=$data->commandClasses->{"50"}->data->{"$i"}->{"updateTime"};
+      }
+     }
+    }
+    $value=implode('; ', $values);
+    if ($value!='') {
+     $rec['SENSOR_VALUE'].=$value.'; ';
+     $rec_updated=1;
+    }
    }
+
+   if ($rec['CLASS_SENSOR_ALARM']) {
+    // ... $data->commandClasses->{"156"}->data
+    if (is_object($data->commandClasses->{"156"}->data->{"0"}->sensorState)) {
+     $command_classes['AlarmGeneral']=156;
+     $properties['AlarmGeneral']=$data->commandClasses->{"156"}->data->{"0"}->sensorState->value;
+     $updatedList['AlarmGeneral']=$data->commandClasses->{"156"}->data->{"0"}->sensorState->updateTime;
+     $value=$properties['AlarmGeneral'];
+     if ($value!=$rec['LEVEL']) {
+      $rec['LEVEL']=$value;
+      $rec_updated=1;
+     }
+    }
+    if (is_object($data->commandClasses->{"156"}->data->{"1"}->sensorState)) {
+     $command_classes['AlarmSmoke']=156;
+     $properties['AlarmSmoke']=$data->commandClasses->{"156"}->data->{"1"}->sensorState->value;
+     $updatedList['AlarmSmoke']=$data->commandClasses->{"156"}->data->{"1"}->sensorState->updateTime;
+    }
+    if (is_object($data->commandClasses->{"156"}->data->{"2"}->sensorState)) {
+     $command_classes['AlarmCarbonMonoxide']=156;
+     $properties['AlarmCarbonMonoxide']=$data->commandClasses->{"156"}->data->{"2"}->sensorState->value;
+     $updatedList['AlarmCarbonMonoxide']=$data->commandClasses->{"156"}->data->{"2"}->sensorState->updateTime;
+    }
+    if (is_object($data->commandClasses->{"156"}->data->{"3"}->sensorState)) {
+     $command_classes['AlarmCarbonDioxide']=156;
+     $properties['AlarmCarbonDioxide']=$data->commandClasses->{"156"}->data->{"3"}->sensorState->value;
+     $updatedList['AlarmCarbonDioxide']=$data->commandClasses->{"156"}->data->{"3"}->sensorState->updateTime;
+    }
+    if (is_object($data->commandClasses->{"156"}->data->{"4"}->sensorState)) {
+     $command_classes['AlarmHeat']=156;
+     $properties['AlarmHeat']=$data->commandClasses->{"156"}->data->{"4"}->sensorState->value;
+     $updatedList['AlarmHeat']=$data->commandClasses->{"156"}->data->{"4"}->sensorState->updateTime;
+    }
+    if (is_object($data->commandClasses->{"156"}->data->{"5"}->sensorState)) {
+     $command_classes['AlarmFlood']=156;
+     $properties['AlarmFlood']=$data->commandClasses->{"156"}->data->{"5"}->sensorState->value;
+     $updatedList['AlarmFlood']=$data->commandClasses->{"156"}->data->{"5"}->sensorState->updateTime;
+    }
+    if ($data->commandClasses->{"156"}->data->{"updateTime"}>$updateTime) {
+     $updateTime=$data->commandClasses->{"156"}->data->{"updateTime"};
+    }
+   }
+
+   if ($rec['CLASS_SCENE_CONTROLLER'] && is_object($data->commandClasses->{"43"}->data->{"currentScene"})) {
+    // ... 43
+    $properties['CurrentScene']=$data->commandClasses->{"43"}->data->{"currentScene"}->value;
+    if ($data->commandClasses->{"43"}->data->{"updateTime"}>$updateTime) {
+     $updateTime=$data->commandClasses->{"43"}->data->{"updateTime"};
+    }
+   } elseif ($rec['CLASS_SCENE_CONTROLLER'] && is_object($data->commandClasses->{"45"}->data->{"currentScene"})) {
+    // ... 45
+    $properties['CurrentScene']=$data->commandClasses->{"45"}->data->{"currentScene"}->value;
+    if ($data->commandClasses->{"45"}->data->{"updateTime"}>$updateTime) {
+     $updateTime=$data->commandClasses->{"43"}->data->{"updateTime"};
+    }
+   }
+
+   if ($rec['CLASS_THERMOSTAT'] && isset($data->commandClasses->{"64"}->data->mode->value)) {
+    //$value=$data->commandClasses->{"64"}->data->{$data->commandClasses->{"64"}->data->mode->value}->modeName->value;
+    $rec['SENSOR_VALUE'].=" Mode: ".$data->commandClasses->{"64"}->data->{$data->commandClasses->{"64"}->data->mode->value}->modeName->value.';';
+    $value=$data->commandClasses->{"64"}->data->mode->value;
+    if ($value!=$rec['MODE_VALUE']) {
+     $rec['MODE_VALUE']=$value;
+     $rec_updated=1;
+    }
+    $command_classes['Thermostat mode']=64;
+    $properties['Thermostat mode']=$rec['MODE_VALUE'];
+    $updatedList['Thermostat mode']=$data->commandClasses->{"64"}->data->{"updateTime"};
+    if ($data->commandClasses->{"64"}->data->{"updateTime"}>$updateTime) {
+     $updateTime=$data->commandClasses->{"64"}->data->{"updateTime"};
+    }
+
+    $comments_str='';
+    for($i=0;$i<255;$i++) {
+     if ($data->commandClasses->{"64"}->data->{$i}) {
+      $comments_str.="$i = ".$data->commandClasses->{"64"}->data->{$i}->modeName->value."; ";
+     }
+    }
+    $comments['Thermostat mode']=$comments_str;
+
+    if (isset($data->commandClasses->{"67"}->data)) {
+     //ThermostatSetPoint
+     for($i=0;$i<255;$i++) {
+      if ($data->commandClasses->{"67"}->data->{$i}->val) {
+       $key='ThermostatSetPoint '.$data->commandClasses->{"67"}->data->{$i}->modeName->value;
+       $properties[$key]=$data->commandClasses->{"67"}->data->{$i}->val->value;
+       $command_classes[$key]=67;
+       if ($data->commandClasses->{"67"}->data->{$i}->scaleString->value) {
+        $comments[$key]=$data->commandClasses->{"67"}->data->{$i}->scaleString->value;
+       }
+      }
+     }
+    }
+
+    if (isset($data->commandClasses->{"68"}->data->mode->value)) {
+     //ThermostatFanMode
+     $properties['ThermostatFanOn']=(int)$data->commandClasses->{"68"}->data->on->value;
+     $command_classes['ThermostatFanMode']=68;
+     $properties['ThermostatFanMode']=$data->commandClasses->{"68"}->data->mode->value;
+     if ($data->commandClasses->{"68"}->data->{"updateTime"}>$updateTime) {
+      $updateTime=$data->commandClasses->{"68"}->data->{"updateTime"};
+     }
+     $rec['SENSOR_VALUE'].=" Fan Mode: ".$data->commandClasses->{"68"}->data->{$data->commandClasses->{"68"}->data->mode->value}->modeName->value.';';
+     $comments_str='';
+     for($i=0;$i<255;$i++) {
+      if ($data->commandClasses->{"68"}->data->{$i}) {
+       $comments_str.="$i = ".$data->commandClasses->{"68"}->data->{$i}->modeName->value."; ";
+      }
+     }
+     $comments['ThermostatFanMode']=$comments_str;
+    }
+
+
+   }
+
+
+   if ($updateTime) {
+    $properties['updateTime']=$updateTime;
+    $rec['LATEST_UPDATE']=date('Y-m-d H:i:s', $properties['updateTime']);
+    $rec_updated=1;
+   }
+
+
+   if ($rec_updated) {
+    SQLUpdate('zwave_devices', $rec);
+   }
+
+
 
    foreach($properties as $k=>$v) {
     $prop=SQLSelectOne("SELECT * FROM zwave_properties WHERE DEVICE_ID='".$rec['ID']."' AND UNIQ_ID LIKE '".DBSafe($k)."'");
     $prop['DEVICE_ID']=$rec['ID'];
     $prop['UNIQ_ID']=$k;
     $prop['TITLE']=$k;
+    $prop['COMMAND_CLASS']=$command_classes[$k];
+    if ($prop['VALUE']!=$v) {
+     $prop['UPDATED']=date('Y-m-d H:i:s');
+    }
+    if ($updatedList[$k]) {
+     $prop['UPDATED']=date('Y-m-d H:i:s', $updatedList[$k]);
+    }
     $prop['VALUE']=$v;
-    $prop['UPDATED']=date('Y-m-d H:i:s');
+    if ($comments[$k]) {
+     $prop['COMMENTS']=$comments[$k];
+    }
+
+    if (is_numeric($prop['VALUE']) && $prop['VALUE']!=='') {
+     $prop['VALUE']=round($prop['VALUE'], 3);
+    }
+
+
     if ($prop['ID']) {
      SQLUpdate('zwave_properties', $prop);
-     if ($prop['LINKED_OBJECT'] && $prop['LINKED_PROPERTY']) {
-      setGlobal($prop['LINKED_OBJECT'].'.'.$prop['LINKED_PROPERTY'], $prop['VALUE'], array('zwave_properties'=>'0'));
+
+     if ($prop['VALUE']!=='') {
+      $validated=1;
+     } else {
+      $validated=0;
+      continue;
      }
+
+     if ($prop['LINKED_OBJECT']) {
+      if ($prop['CORRECT_VALUE']) {
+       $prop['VALUE']+=(float)$prop['CORRECT_VALUE'];
+      }
+     }
+     if ($prop['VALIDATE']) {
+      if (((float)$prop['VALUE']<(float)$prop['VALID_FROM']) || ((float)$prop['VALUE']>(float)$prop['VALID_TO'])) {
+       $validated=0;
+      }
+     }
+
+ 
+     if ($prop['LINKED_OBJECT'] && $prop['LINKED_PROPERTY'] && $validated) {
+      $old_value=getGlobal($prop['LINKED_OBJECT'].'.'.$prop['LINKED_PROPERTY']);
+      if ($prop['VALUE']!=$old_value) {
+       setGlobal($prop['LINKED_OBJECT'].'.'.$prop['LINKED_PROPERTY'], $prop['VALUE'], array($this->name=>'0'));
+      }
+     }
+
+     if ($prop['LINKED_OBJECT'] && $prop['LINKED_METHOD'] && $validated && ($prop['VALUE']!=$old_value || (!$prop['LINKED_PROPERTY']))) {
+      $params=array();
+      $params['VALUE']=$prop['VALUE'];
+      callMethod($prop['LINKED_OBJECT'].'.'.$prop['LINKED_METHOD'], $params);
+     }
+
     } else {
      $prop['ID']=SQLInsert('zwave_properties', $prop);
     }
+
    }
 
    //print_r($data);exit;
@@ -561,8 +909,8 @@ function admin(&$out) {
    curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
    curl_setopt($ch, CURLOPT_URL, $url);
    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-   curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-   curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+   curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+   curl_setopt($ch, CURLOPT_TIMEOUT, 30);
    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, FALSE);
    $result = curl_exec($ch);
    curl_close($ch);
@@ -575,8 +923,8 @@ function admin(&$out) {
       curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
       curl_setopt($ch, CURLOPT_URL, $url);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-      curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+      curl_setopt($ch, CURLOPT_TIMEOUT, 30);
       curl_setopt($ch, CURLOPT_FOLLOWLOCATION, FALSE);
       $result = curl_exec($ch);
       curl_close($ch);
@@ -636,6 +984,64 @@ function usual(&$out) {
  function search_zwave_properties(&$out) {
   require(DIR_MODULES.$this->name.'/zwave_properties_search.inc.php');
  }
+
+function prettyPrint($json)
+{
+    $result = '';
+    $level = 0;
+    $in_quotes = false;
+    $in_escape = false;
+    $ends_line_level = NULL;
+    $json_length = strlen( $json );
+
+    for( $i = 0; $i < $json_length; $i++ ) {
+        $char = $json[$i];
+        $new_line_level = NULL;
+        $post = "";
+        if( $ends_line_level !== NULL ) {
+            $new_line_level = $ends_line_level;
+            $ends_line_level = NULL;
+        }
+        if ( $in_escape ) {
+            $in_escape = false;
+        } else if( $char === '"' ) {
+            $in_quotes = !$in_quotes;
+        } else if( ! $in_quotes ) {
+            switch( $char ) {
+                case '}': case ']':
+                    $level--;
+                    $ends_line_level = NULL;
+                    $new_line_level = $level;
+                    break;
+
+                case '{': case '[':
+                    $level++;
+                case ',':
+                    $ends_line_level = $level;
+                    break;
+
+                case ':':
+                    $post = " ";
+                    break;
+
+                case " ": case "\t": case "\n": case "\r":
+                    $char = "";
+                    $ends_line_level = $new_line_level;
+                    $new_line_level = NULL;
+                    break;
+            }
+        } else if ( $char === '\\' ) {
+            $in_escape = true;
+        }
+        if( $new_line_level !== NULL ) {
+            $result .= "\n".str_repeat( "\t", $new_line_level );
+        }
+        $result .= $char.$post;
+    }
+
+    return $result;
+}
+
 /**
 * Install
 *
@@ -693,18 +1099,34 @@ zwave_properties - Properties
  zwave_devices: CLASS_METER int(3) NOT NULL DEFAULT '0'
  zwave_devices: CLASS_BATTERY int(3) NOT NULL DEFAULT '0'
  zwave_devices: CLASS_THERMOSTAT int(3) NOT NULL DEFAULT '0'
+ zwave_devices: CLASS_SENSOR_ALARM int(3) NOT NULL DEFAULT '0'
+ zwave_devices: CLASS_SCENE_CONTROLLER int(3) NOT NULL DEFAULT '0'
+ zwave_devices: CLASS_CONFIG int(3) NOT NULL DEFAULT '0'
  zwave_devices: ALL_CLASSES varchar(255) NOT NULL DEFAULT ''
+ zwave_devices: BRAND varchar(255) NOT NULL DEFAULT ''
+ zwave_devices: PRODUCT varchar(255) NOT NULL DEFAULT ''
+ zwave_devices: XMLFILE varchar(255) NOT NULL DEFAULT ''
+ zwave_devices: RAW_DATA text NOT NULL DEFAULT ''
 
  zwave_properties: ID int(10) unsigned NOT NULL auto_increment
  zwave_properties: DEVICE_ID int(10) NOT NULL DEFAULT '0'
  zwave_properties: UNIQ_ID varchar(100) NOT NULL DEFAULT ''
  zwave_properties: TITLE varchar(255) NOT NULL DEFAULT ''
+ zwave_properties: COMMENTS varchar(255) NOT NULL DEFAULT ''
  zwave_properties: VALUE varchar(255) NOT NULL DEFAULT ''
  zwave_properties: VALUE_TYPE varchar(255) NOT NULL DEFAULT ''
  zwave_properties: READ_ONLY int(3) NOT NULL DEFAULT '0'
+ zwave_properties: UPDATE_PERIOD int(10) NOT NULL DEFAULT '0'
+ zwave_properties: VALIDATE int(3) NOT NULL DEFAULT '0'
+ zwave_properties: VALID_FROM varchar(10) NOT NULL DEFAULT ''
+ zwave_properties: VALID_TO varchar(10) NOT NULL DEFAULT ''
+ zwave_properties: CORRECT_VALUE varchar(10) NOT NULL DEFAULT ''
+ zwave_properties: COMMAND_CLASS varchar(10) NOT NULL DEFAULT ''
  zwave_properties: LINKED_OBJECT varchar(255) NOT NULL DEFAULT ''
  zwave_properties: LINKED_PROPERTY varchar(255) NOT NULL DEFAULT ''
+ zwave_properties: LINKED_METHOD varchar(255) NOT NULL DEFAULT ''
  zwave_properties: UPDATED datetime
+ zwave_properties: NEXT_UPDATE datetime
 EOD;
   parent::dbInstall($data);
  }

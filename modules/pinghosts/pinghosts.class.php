@@ -22,7 +22,7 @@ class pinghosts extends module {
 function pinghosts() {
   $this->name="pinghosts";
   $this->title="<#LANG_MODULE_PINGHOSTS#>";
-  $this->module_category="<#LANG_SECTION_OBJECTS#>";
+  $this->module_category="<#LANG_SECTION_DEVICES#>";
   $this->checkInstalled();
 }
 /**
@@ -215,7 +215,7 @@ function usual(&$out) {
     $online=ping(processTitle($host['HOSTNAME']));
    } else {
     //web host
-    $online=file_get_contents(processTitle($host['HOSTNAME']));
+    $online=getURL(processTitle($host['HOSTNAME']), 0);
     SaveFile("./cached/host_".$host['ID'].'.html', $online);
     if ($host['SEARCH_WORD']!='' && !is_integer(strpos($online, $host['SEARCH_WORD']))) {
      $online=0;
@@ -274,6 +274,12 @@ function usual(&$out) {
      $host['LOG']=date('Y-m-d H:i:s').' Host is offline'."\n".$host['LOG'];
     } elseif ($host['STATUS']==1) {
      $host['LOG']=date('Y-m-d H:i:s').' Host is online'."\n".$host['LOG'];
+    }
+    $tmp=explode("\n", $host['LOG']);
+    $total=count($tmp);
+    if ($total>50) {
+     $tmp=array_slice($tmp, 0, 50);
+     $host['LOG']=implode("\n", $tmp);
     }
    }
 

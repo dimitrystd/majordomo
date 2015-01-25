@@ -1133,6 +1133,18 @@ function getLocalFilesTree($dir, $pattern, $ex_pattern, &$log, $verbose) {
 
         if ($this->method=='direct') {
   
+         $ignores=SQLSelect("SELECT * FROM ignore_updates ORDER BY NAME");
+         $total=count($ignores);
+         for($i=0;$i<$total;$i++) {
+          $name=$ignores[$i]['NAME'];
+          if (is_dir(ROOT.'saverestore/temp/modules/'.$name)) {
+           $this->removeTree(ROOT.'saverestore/temp/modules/'.$name);
+          }
+          if (is_dir(ROOT.'saverestore/temp/templates/'.$name)) {
+           $this->removeTree(ROOT.'saverestore/temp/templates/'.$name);
+          }
+         }
+
          // UPDATING FILES DIRECTLY
          $this->copyTree(ROOT.'saverestore/temp'.$folder, ROOT, 1); // restore all files
 
@@ -1320,6 +1332,11 @@ function getLocalFilesTree($dir, $pattern, $ex_pattern, &$log, $verbose) {
     chdir('../../');
    }
 
+   if (defined('SETTINGS_BACKUP_PATH') && SETTINGS_BACKUP_PATH!='' && file_exists(ROOT.'saverestore/'.$tar_name)) {
+    $dest=SETTINGS_BACKUP_PATH;
+    @copy(ROOT.'saverestore/'.$tar_name, $dest.$tar_name);
+   }
+
 
   }
  }
@@ -1383,10 +1400,14 @@ function getLocalFilesTree($dir, $pattern, $ex_pattern, &$log, $verbose) {
   fclose ($fp);
   */
 
-  if (substr(php_uname(), 0, 7) == "Windows") {
-   exec(SERVER_ROOT."/server/mysql/bin/mysqldump --user=root --no-create-db --add-drop-table --databases ".DB_NAME.">".$filename);
+  if (defined('PATH_TO_MYSQLDUMP')) {
+   exec(PATH_TO_MYSQLDUMP." --user=".DB_USER." --password=".DB_PASSWORD." --no-create-db --add-drop-table --databases ".DB_NAME.">".$filename);
   } else {
-   exec("/usr/bin/mysqldump --user=".DB_USER." --password=".DB_PASSWORD." --no-create-db --add-drop-table --databases ".DB_NAME.">".$filename);
+   if (substr(php_uname(), 0, 7) == "Windows") {
+    exec(SERVER_ROOT."/server/mysql/bin/mysqldump --user=".DB_USER." --password=".DB_PASSWORD." --no-create-db --add-drop-table --databases ".DB_NAME.">".$filename);
+   } else {
+    exec("/usr/bin/mysqldump --user=".DB_USER." --password=".DB_PASSWORD." --no-create-db --add-drop-table --databases ".DB_NAME.">".$filename);
+   }
   }
 
  }

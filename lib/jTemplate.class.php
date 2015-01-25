@@ -553,6 +553,11 @@ class jTemplate {
 
 
      StartMeasure("module_".$module_data["name"]); 
+
+     if (SETTINGS_SITE_LANGUAGE && file_exists(ROOT .'languages/'.$module_data["name"].'_' . SETTINGS_SITE_LANGUAGE . '.php')) 
+      include_once(ROOT .'languages/'.$module_data["name"].'_'.SETTINGS_SITE_LANGUAGE . '.php');
+     if (file_exists(ROOT .'languages/'.$module_data["name"].'_default.php')) include_once (ROOT .'languages/'.$module_data["name"].'_default.php');
+
      // run module and insert module result in template
      $code.=$obj."->run();\n";
      $code.="\$tmp=".$obj."->result;\n";
@@ -632,8 +637,8 @@ class jTemplate {
    } else {
     if ((Defined("DEBUG_MODE")) && !Is_Integer(StrPos($file_name, ".js"))) {
      $id="block".(int)rand(0, 100000);
-     $res=str_replace($matches[0][$i], "<!-- begin of file $file_name -->".$this->parse($this->loadfile($file_name)."<!-- end of file $file_name -->", $new_hash, $new_root), $res);
-     //$res=str_replace($matches[0][$i], $this->parse($this->loadfile($file_name), $new_hash, $new_root), $res);
+     //$res=str_replace($matches[0][$i], "<!-- begin of file $file_name -->".$this->parse($this->loadfile($file_name)."<!-- end of file $file_name -->", $new_hash, $new_root), $res);
+     $res=str_replace($matches[0][$i], "".$this->parse($this->loadfile($file_name)."", $new_hash, $new_root), $res);
     } else {
      $res=str_replace($matches[0][$i], $this->parse($this->loadfile($file_name), $new_hash, $new_root), $res);
     }

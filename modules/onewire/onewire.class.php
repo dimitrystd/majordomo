@@ -12,7 +12,7 @@
 //
 //check to make sure the file exists
 if(!function_exists('bcadd'))  {
-  if(file_exists("/opt/owfs/bin/bcadd.php"))  {
+  if(@file_exists("/opt/owfs/bin/bcadd.php"))  {
     require "/opt/owfs/bin/bcadd.php";
   } else if(file_exists(DIR_MODULES."onewire/bcadd.php"))  {
     require DIR_MODULES."onewire/bcadd.php";
@@ -22,7 +22,7 @@ if(!function_exists('bcadd'))  {
 }
 
 //check to make sure the file exists
-if(file_exists("/opt/owfs/bin/ownet.php"))  {
+if(@file_exists("/opt/owfs/bin/ownet.php"))  {
   require "/opt/owfs/bin/ownet.php";
 } else if(file_exists(DIR_MODULES."onewire/ownet.php"))  {
   require DIR_MODULES."onewire/ownet.php";
@@ -220,7 +220,23 @@ function usual(&$out) {
  function delete_display($id) {
   SQLExec("DELETE FROM owdisplays WHERE ID='".$id."'");
  }
- 
+
+/**
+* Title
+*
+* Description
+*
+* @access public
+*/
+ function propertySetHandle($object, $property, $value) {
+  $owp=SQLSelect("SELECT ID FROM owproperties WHERE LINKED_OBJECT LIKE '".DBSafe($object)."' AND LINKED_PROPERTY LIKE '".DBSafe($property)."'");
+  $total=count($owp);
+  if ($total) {
+   for($i=0;$i<$total;$i++) {
+    $this->setProperty($owp[$i]['ID'], $value);
+   }
+  }
+ }
 /**
 * onewire delete record
 *
@@ -407,7 +423,7 @@ function usual(&$out) {
     }
 
 
-    if (!is_null($value) && $value!=$old_value) {
+    if (!is_null($value)) {
      $prec['VALUE']=$value;
      $prec['UPDATED']=date('Y-m-d H:i:s');
 
@@ -421,16 +437,18 @@ function usual(&$out) {
 
 
      if ($prec['LINKED_OBJECT'] && $prec['LINKED_PROPERTY']) {
-      sg($prec['LINKED_OBJECT'].'.'.$prec['LINKED_PROPERTY'], $prec['VALUE'], 1);
+      setGlobal($prec['LINKED_OBJECT'].'.'.$prec['LINKED_PROPERTY'], $prec['VALUE'], array($this->name=>'0'));
      }
 
-     $changed_values=array();
-     $changed_values[$prec['SYSNAME']]=array('OLD_VALUE'=>$old_value, 'VALUE'=>$prec['VALUE']);
+     if ($value!=$old_value) {
 
-     $params=$changed_values;
-     if ($script_id) {
-      runScript($script_id, $params);
-     } elseif ($code) {
+      $changed_values=array();
+      $changed_values[$prec['SYSNAME']]=array('OLD_VALUE'=>$old_value, 'VALUE'=>$prec['VALUE']);
+
+      $params=$changed_values;
+      if ($script_id) {
+       runScript($script_id, $params);
+      } elseif ($code) {
 
 
                   try {
@@ -442,7 +460,10 @@ function usual(&$out) {
                    DebMes('Error: exception '.get_class($e).', '.$e->getMessage().'.');
                   }
 
+      }
+
      }
+
     }
    }
   }
@@ -558,18 +579,23 @@ function updateDisplay($id) {
      $value=$ow->get($properties[$ip],OWNET_MSG_READ,false);
     }
 
-    if (!is_null($value) && $old_value!=$value) {
+    if (!is_null($value)) {
      // value updated
-     $changed=1;
-     $changed_values[$prec['SYSNAME']]=array('OLD_VALUE'=>$old_value, 'VALUE'=>$prec['VALUE']);
      $prec['VALUE']=$value;
      $prec['UPDATED']=date('Y-m-d H:i:s');
      SQLUpdate('owproperties', $prec);
      //$rec['LOG']=date('Y-m-d H:i:s')." ".$prec['SYSNAME'].": ".$prec['VALUE']."\n".$rec['LOG'];
-     SQLUpdate('owdevices', $rec);
+     //SQLUpdate('owdevices', $rec);
+
      if ($prec['LINKED_OBJECT'] && $prec['LINKED_PROPERTY']) {
-      sg($prec['LINKED_OBJECT'].'.'.$prec['LINKED_PROPERTY'], $prec['VALUE'], array('owproperties'=>'0'));
+      setGlobal($prec['LINKED_OBJECT'].'.'.$prec['LINKED_PROPERTY'], $prec['VALUE'], array($this->name=>'0'));
      }
+
+     if ($old_value!=$value) {
+      $changed=1;
+      $changed_values[$prec['SYSNAME']]=array('OLD_VALUE'=>$old_value, 'VALUE'=>$prec['VALUE']);
+     }
+
     }
    }
 

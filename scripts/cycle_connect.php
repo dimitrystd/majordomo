@@ -53,7 +53,7 @@ if (!$connect->config['CONNECT_SYNC']) {
  //$send_menu=1;
  //$out=array();
  //$connect->sendData($out, 1);
- $connect->sendMenu();
+ $connect->sendMenu(1);
  $commands=SQLSelect("SELECT * FROM commands");
  $total=count($commands);
  for($i=0;$i<$total;$i++) {
@@ -73,6 +73,10 @@ if ($socket === false) {
     echo "OK.\n";
 }
 
+socket_set_option($socket,SOL_SOCKET, SO_RCVTIMEO, array("sec"=>10, "usec"=>0));
+socket_set_option($socket,SOL_SOCKET, SO_SNDTIMEO, array("sec"=>10, "usec"=>0));
+
+
 echo date('Y-m-d H:i:s ')."Attempting to connect to '$address' on port '$port'...";
 $result = socket_connect($socket, $address, $port);
 if ($result === false) {
@@ -81,6 +85,7 @@ if ($result === false) {
 } else {
     echo "OK.\n";
 }
+
 
 $in='Hello, world!'."\n";
 echo date('Y-m-d H:i:s ')."Sending: ".$in;
@@ -132,7 +137,7 @@ while(1) {
    if (time()-$menu_sent_time>30*60) {
     echo "Updating full menu\n";
     $menu_sent_time=time();
-    $connect->sendMenu();
+    $connect->sendMenu(1);
     $commands=SQLSelect("SELECT * FROM commands");
     $total=count($commands);
     for($i=0;$i<$total;$i++) {
@@ -150,11 +155,12 @@ while(1) {
     $commands=SQLSelect("SELECT * FROM commands WHERE AUTO_UPDATE>0 AND (NOW()-RENDER_UPDATED)>AUTO_UPDATE");
     $total=count($commands);
     for($i=0;$i<$total;$i++) {
-     echo date('Y-m-d H:i:s ')."Updating auto update item (id ".$commands[$i]['ID']." time ".$commands[$i]['AUTO_UPDATE']."): ".$commands[$i]['TITLE']."\n";
-     $commands[$i]['RENDER_TITLE']=processTitle($commands[$i]['TITLE']);
-     $commands[$i]['RENDER_DATA']=processTitle($commands[$i]['DATA']);
+     $commands[$i]['RENDER_TITLE']=processTitle($commands[$i]['TITLE'], $connect);
+     $commands[$i]['RENDER_DATA']=processTitle($commands[$i]['DATA'], $connect);
      $commands[$i]['RENDER_UPDATED']=date('Y-m-d H:i:s');
      SQLUpdate('commands', $commands[$i]);
+     echo date('Y-m-d H:i:s ')."Updating auto update item (id ".$commands[$i]['ID']." time ".$commands[$i]['AUTO_UPDATE']."): ".$commands[$i]['TITLE']."\n";
+
     }
 
     // sending changes if any
@@ -191,6 +197,7 @@ while(1) {
 
    if (file_exists('./reboot') || $_GET['onetime']) 
    {
+      socket_close($socket);
       $db->Disconnect();
       exit;
    }
@@ -222,6 +229,7 @@ echo "OK.\n\n";
           $url='http://localhost'.$url;
          }
          echo date('Y-m-d H:i:s ')."Sending request to $url\n";
+         DebMes("Connect command: ".$url);
          $content=getURL($url, 0);
         }
         if (preg_match('/PING/is', $out, $m)) {
@@ -229,7 +237,7 @@ echo "OK.\n\n";
          echo date('Y-m-d H:i:s ')."Sending: ".$in;
          socket_write($socket, $in, strlen($in));
          echo "OK.\n";
-         setGlobal((str_replace('.php', '', basename(__FILE__))).'Run', time());
+         setGlobal((str_replace('.php', '', basename(__FILE__))).'Run', time(), 1);
         }
  }
 

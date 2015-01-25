@@ -131,6 +131,77 @@ function admin(&$out) {
   global $item_id;
 
 
+  if ($op=='get_details') {
+
+   startMeasure('getDetails');
+   global $labels;
+   global $values;
+
+
+
+   $res=array();
+
+   //echo "Debug labels: $labels \nValues: $values\n";
+
+   $res['LABELS']=array();
+   $labels=explode(',', $labels);
+   $total=count($labels);
+   $seen=array();
+   for($i=0;$i<$total;$i++) {
+    $item_id=trim($labels[$i]);
+    if (!$item_id || $seen[$item_id]) {
+     continue;
+    }
+    $seen[$item_id]=1;
+    $item=SQLSelectOne("SELECT * FROM commands WHERE ID='".(int)$item_id."'");
+    if ($item['ID']) {
+     if ($item['TYPE']=='custom') {
+      $item['DATA']=processTitle($item['DATA'], $this);
+      $data=$item['DATA'];
+     } else {
+      $item['TITLE']=processTitle($item['TITLE'], $this);
+      $data=$item['TITLE'];
+     }
+     if ($item['RENDER_DATA']!=$item['DATA'] || $item['RENDER_TITLE']!=$item['TITLE']) {
+      $tmp=SQLSelectOne("SELECT * FROM commands WHERE ID='".$item['ID']."'");
+      $tmp['RENDER_TITLE']=$item['TITLE'];
+      $tmp['RENDER_DATA']=$item['DATA'];
+      $tmp['RENDER_UPDATED']=date('Y-m-d H:i:s');
+      SQLUpdate('commands', $tmp);
+     }
+     if (preg_match('/#[\w\d]{6}/is', $data, $m)) {
+      $color=$m[0];
+      $data=trim(str_replace($m[0], '<style>#item'.$item['ID'].' .ui-btn-active {background-color:'.$color.';border-color:'.$color.'}</style>', $data));
+     }
+     $res['LABELS'][]=array('ID'=>$item['ID'], 'DATA'=>$data);
+    }
+   }
+
+   $res['VALUES']=array();
+   $values=explode(',', $values);
+   $total=count($values);
+   $seen=array();
+   for($i=0;$i<$total;$i++) {
+    $item_id=trim($values[$i]);
+    if (!$item_id || $seen[$item_id]) {
+     continue;
+    }
+    $seen[$item_id]=1;
+    $item=SQLSelectOne("SELECT * FROM commands WHERE ID='".(int)$item_id."'");
+    if ($item['ID']) {
+     $data=$item['CUR_VALUE'];
+     $res['VALUES'][]=array('ID'=>$item['ID'], 'DATA'=>$data);
+    }
+   }
+
+   $res['LATEST_REQUEST']=time();
+   echo json_encode($res);
+
+   endMeasure('getDetails');
+   exit;
+
+  }
+
   if ($op=='get_label') {
    startMeasure('getLabel');
    $item=SQLSelectOne("SELECT * FROM commands WHERE ID='".(int)$item_id."'");
@@ -176,21 +247,21 @@ function admin(&$out) {
    global $new_value;
    $item=SQLSelectOne("SELECT * FROM commands WHERE ID='".(int)$item_id."'");
    if ($item['ID']) {
+    $old_value=$item['CUR_VALUE'];
     $item['CUR_VALUE']=$new_value;
     SQLUpdate('commands', $item);
     if ($item['LINKED_PROPERTY']!='') {
-     $old_value=gg($item['LINKED_OBJECT'].'.'.$item['LINKED_PROPERTY']);
-     sg($item['LINKED_OBJECT'].'.'.$item['LINKED_PROPERTY'], $item['CUR_VALUE'], array('commands'=>'ID!='.$item['ID']));
-     //DebMes("setting property ".$item['LINKED_OBJECT'].".".$item['LINKED_PROPERTY']." to ".$item['CUR_VALUE']);
+     //$old_value=gg($item['LINKED_OBJECT'].'.'.$item['LINKED_PROPERTY']);
+     sg($item['LINKED_OBJECT'].'.'.$item['LINKED_PROPERTY'], $item['CUR_VALUE'], array($this->name=>'ID!='.$item['ID']));
     }
 
-    $params=array('VALUE'=>$item['CUR_VALUE']);
-    if (isSet($old_value)) {
-     $params['OLD_VALUE']=$old_value;
-    }
+    $params=array('VALUE'=>$item['CUR_VALUE'], 'OLD_VALUE'=>$old_value);
 
     if ($item['ONCHANGE_METHOD']!='') {
-     getObject($item['ONCHANGE_OBJECT'])->callMethod($item['ONCHANGE_METHOD'], $params);
+     if (!$item['LINKED_OBJECT']) {
+      $item['LINKED_OBJECT']=$item['ONCHANGE_OBJECT'];
+     }
+     getObject($item['LINKED_OBJECT'])->callMethod($item['ONCHANGE_METHOD'], $params); //ONCHANGE_OBJECT
      //DebMes("calling method ".$item['ONCHANGE_OBJECT'].".".$item['ONCHANGE_METHOD']." with ".$item['CUR_VALUE']);
     }
 
@@ -231,6 +302,16 @@ function admin(&$out) {
    $this->search_commands($out);
    endMeasure('searchCommands', 1);
   }
+
+  if ($this->view_mode=='moveup' && $this->id) {
+   $this->reorder_items($this->id, 'up');
+   $this->redirect("?");
+  }
+  if ($this->view_mode=='movedown' && $this->id) {
+   $this->reorder_items($this->id, 'down');
+   $this->redirect("?");
+  }
+
   if ($this->view_mode=='edit_commands') {
    $this->edit_commands($out, $this->id);
   }
@@ -249,6 +330,38 @@ function admin(&$out) {
   }
  }
 }
+
+ function reorder_items($id, $direction='up') {
+  $element=SQLSelectOne("SELECT * FROM commands WHERE ID='".(int)$id."'");
+  if ($element['PARENT_ID']) {
+   $all_elements=SQLSelect("SELECT * FROM commands WHERE PARENT_ID=".$element['PARENT_ID']." ORDER BY PRIORITY DESC, TITLE");
+  } else {
+   $all_elements=SQLSelect("SELECT * FROM commands WHERE PARENT_ID=0 ORDER BY PRIORITY DESC, TITLE");
+  }
+  $total=count($all_elements);
+  for($i=0;$i<$total;$i++) {
+   if ($all_elements[$i]['ID']==$id && $i>0 && $direction=='up') {
+    $tmp=$all_elements[$i-1];
+    $all_elements[$i-1]=$all_elements[$i];
+    $all_elements[$i]=$tmp;
+    break;
+   }
+   if ($all_elements[$i]['ID']==$id && $i<($total-1) && $direction=='down') {
+    $tmp=$all_elements[$i+1];
+    $all_elements[$i+1]=$all_elements[$i];
+    $all_elements[$i]=$tmp;
+    break;
+   }
+  }
+  $priority=($total)*10;
+  for($i=0;$i<$total;$i++) {
+   $all_elements[$i]['PRIORITY']=$priority;
+   $priority-=10;
+   SQLUpdate('commands', $all_elements[$i]);
+  }
+ }
+
+
 /**
 * FrontEnd
 *
@@ -440,15 +553,31 @@ function usual(&$out) {
     $res[$i]=$item;
    }
 
+   if ($item['TYPE']=='switch') {
+    if (trim($item['DATA'])) {
+     $data=explode("\n", str_replace("\r", "", $item['DATA']));
+     $item['OFF_VALUE']=trim($data[0]);
+     $item['ON_VALUE']=trim($data[1]);
+    } else {
+     $item['OFF_VALUE']=0;
+     $item['ON_VALUE']=1;
+    }
+    $res[$i]=$item;
+   }
 
-   if ($item['TYPE']=='selectbox') {
+   if ($item['TYPE']=='selectbox' || $item['TYPE']=='radiobox') {
     $data=explode("\n", str_replace("\r", "", $item['DATA']));
     $item['OPTIONS']=array();
+    $num=1;
     foreach($data as $line) {
      $line=trim($line);
      if ($line!='') {
       $option=array();
-      $tmp=explode('|', $line);
+      if (preg_match('/=/', $line)) {
+       $tmp=explode('=', $line);
+      } else {
+       $tmp=explode('|', $line);
+      }
       $option['VALUE']=$tmp[0];
       if ($tmp[1]!='') {
        $option['TITLE']=$tmp[1];
@@ -458,6 +587,8 @@ function usual(&$out) {
       if ($option['VALUE']==$item['CUR_VALUE']) {
        $option['SELECTED']=1;
       }
+      $option['NUM']=$num;
+      $num++;
       $item['OPTIONS'][]=$option;
      }
     }
@@ -469,6 +600,13 @@ function usual(&$out) {
     if ($res[$i]['TYPE']=='custom') {
      $res[$i]['DATA']=processTitle($res[$i]['DATA'], $this);
     }
+
+     if (preg_match('/#[\w\d]{6}/is', $res[$i]['TITLE'], $m)) {
+      $color=$m[0];
+      $res[$i]['TITLE']=trim(str_replace($m[0], '<style>#item'.$res[$i]['ID'].' .ui-btn-active {background-color:'.$color.';border-color:'.$color.'}</style>', $res[$i]['TITLE']));
+     }
+
+
 
     if ($res[$i]['RENDER_TITLE']!=$res[$i]['TITLE'] || $res[$i]['RENDER_DATA']!=$res[$i]['DATA']) {
      $tmp=SQLSelectOne("SELECT * FROM commands WHERE ID='".$res[$i]['ID']."'");
@@ -485,11 +623,15 @@ function usual(&$out) {
      $res[$i]['AUTO_UPDATE']=0;
     }
 
+    $res[$i]['TITLE_SAFE']=htmlspecialchars($res[$i]['TITLE']);
+
+    /*
     foreach($res[$i] as $k=>$v) {
      if (!is_array($res[$i][$k]) && $k!='DATA') {
       $res[$i][$k]=addslashes($v);
      }
     }
+    */
 
     $tmp=SQLSelectOne("SELECT COUNT(*) as TOTAL FROM commands WHERE PARENT_ID='".$res[$i]['ID']."'");
     if ($tmp['TOTAL']) {
@@ -513,6 +655,23 @@ function usual(&$out) {
    endMeasure('processMenuElements', 1);
 
   }
+
+
+/**
+* Title
+*
+* Description
+*
+* @access public
+*/
+ function propertySetHandle($object, $property, $value) {
+   $commands=SQLSelect("SELECT * FROM commands WHERE LINKED_OBJECT LIKE '".DBSafe($object)."' AND LINKED_PROPERTY LIKE '".DBSafe($property)."'");
+   $total=count($commands);
+   for($i=0;$i<$total;$i++) {
+    $commands[$i]['CUR_VALUE']=$value;
+    SQLUpdate('commands', $commands[$i]);
+   }  
+ }
 
  /**
  * Title
@@ -587,10 +746,10 @@ commands - Commands
  commands: HEIGHT int(10) NOT NULL DEFAULT '0'
  commands: PARENT_ID int(10) NOT NULL DEFAULT '0'
  commands: PRIORITY int(10) NOT NULL DEFAULT '0'
- commands: MIN_VALUE int(10) NOT NULL DEFAULT '0'
- commands: MAX_VALUE int(10) NOT NULL DEFAULT '0'
+ commands: MIN_VALUE float(10) NOT NULL DEFAULT '0'
+ commands: MAX_VALUE float(10) NOT NULL DEFAULT '0'
  commands: CUR_VALUE varchar(255) NOT NULL DEFAULT '0'
- commands: STEP_VALUE int(10) NOT NULL DEFAULT '1'
+ commands: STEP_VALUE float(10) NOT NULL DEFAULT '1'
  commands: DATA text
  commands: LINKED_OBJECT varchar(255) NOT NULL DEFAULT ''
  commands: LINKED_PROPERTY varchar(255) NOT NULL DEFAULT ''
@@ -615,6 +774,11 @@ commands - Commands
  commands: AUTO_UPDATE int(10) NOT NULL DEFAULT '0'
 EOD;
   parent::dbInstall($data);
+
+  SQLExec("ALTER TABLE `commands` CHANGE `MIN_VALUE` `MIN_VALUE` FLOAT( 10 ) NOT NULL DEFAULT '0'");
+  SQLExec("ALTER TABLE `commands` CHANGE `MAX_VALUE` `MAX_VALUE` FLOAT( 10 ) NOT NULL DEFAULT '0'");
+  SQLExec("ALTER TABLE `commands` CHANGE `STEP_VALUE` `STEP_VALUE` FLOAT( 10 ) NOT NULL DEFAULT '0'");
+
  }
 // --------------------------------------------------------------------
 }

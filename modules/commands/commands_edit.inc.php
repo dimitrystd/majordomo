@@ -75,7 +75,7 @@
    }
 
 
-  if ($rec['TYPE']=='selectbox' || $rec['TYPE']=='custom') {
+  if ($rec['TYPE']=='selectbox' || $rec['TYPE']=='custom' || $rec['TYPE']=='switch' || $rec['TYPE']=='radiobox') {
    global $data;
    $rec['DATA']=$data;
   } 
@@ -87,20 +87,28 @@ if ($rec['TYPE']=='plusminus'
     || $rec['TYPE']=='switch' 
     || $rec['TYPE']=='custom'
     || $rec['TYPE']=='timebox'
+    || $rec['TYPE']=='datebox'
     || $rec['TYPE']=='textbox'
+    || $rec['TYPE']=='radiobox'
     ) {
     global $cur_value;
         if ($cur_value!='') {
          $rec['CUR_VALUE']=$cur_value;
         }
 
+    $old_linked_object=$rec['LINKED_OBJECT'];
+    $old_linked_property=$rec['LINKED_PROPERTY'];
+
     global $linked_object;
     $rec['LINKED_OBJECT']=trim($linked_object);
     global $linked_property;
     $rec['LINKED_PROPERTY']=trim($linked_property);
 
+    /*
     global $onchange_object;
     $rec['ONCHANGE_OBJECT']=trim($onchange_object);
+    */
+
     global $onchange_method;
     $rec['ONCHANGE_METHOD']=trim($onchange_method);
 
@@ -158,6 +166,15 @@ if ($rec['TYPE']=='plusminus'
     }
     $this->updateTree_commands();
     $out['OK']=1;
+
+    if ($rec['LINKED_OBJECT'] && $rec['LINKED_PROPERTY']) {
+     addLinkedProperty($rec['LINKED_OBJECT'], $rec['LINKED_PROPERTY'], $this->name);
+    }
+    if ($old_linked_object && $old_linked_object!=$rec['LINKED_OBJECT'] && $old_linked_property && $old_linked_property!=$rec['LINKED_PROPERTY']) {
+     removeLinkedProperty($old_linked_object, $old_linked_property, $this->name);
+    }
+
+
    } else {
     $out['ERR']=1;
    }
@@ -187,6 +204,11 @@ if ($rec['TYPE']=='plusminus'
     }
    }
   }
+
+  if ($rec['ONCHANGE_OBJECT'] && !$rec['LINKED_OBJECT']) {
+   $rec['LINKED_OBJECT']=$rec['ONCHANGE_OBJECT'];
+  }
+
   outHash($rec, $out);
 
   $out['SCRIPTS']=SQLSelect("SELECT ID, TITLE FROM scripts ORDER BY TITLE");

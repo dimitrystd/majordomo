@@ -4,6 +4,71 @@
 */
 
 
+  function getValueIdByName($object_name, $property) {
+
+    $value=SQLSelectOne("SELECT ID FROM pvalues WHERE PROPERTY_NAME = '".DBSafe($object_name.'.'.$property)."'");
+    if (!$value['ID']) {
+     $object=getObject($object_name);
+     if (is_object($object)) {
+      $property_id=$object->getPropertyByName($property, $object->class_id, $object->id); //
+      $value=SQLSelectOne("SELECT ID FROM pvalues WHERE PROPERTY_ID='".(int)$property_id."' AND OBJECT_ID='".(int)$object->id."'");
+      if (!$value['ID'] && $property_id) {
+       $value=array();
+       $value['PROPERTY_ID']=$property_id;
+       $value['OBJECT_ID']=$object->id;
+       $value['PROPERTY_NAME']=$object_name.'.'.$property;
+       $value['ID']=SQLInsert('pvalues', $value);
+      }
+     }
+    }
+
+    return (int)$value['ID'];
+    
+  }
+
+  function addLinkedProperty($object, $property, $module) {
+    $value=SQLSelectOne("SELECT * FROM pvalues WHERE ID='".getValueIdByName($object, $property)."'");
+    if ($value['ID']) {
+     if (!$value['LINKED_MODULES']) {
+      $tmp=array();
+     } else {
+      $tmp=explode(',', $value['LINKED_MODULES']);
+     }
+     if (!in_array($module, $tmp)) {
+      $tmp[]=$module;
+      $value['LINKED_MODULES']=implode(',', $tmp);
+      SQLUpdate('pvalues', $value);
+     }
+    } else {
+     return 0;
+    }
+  }
+
+  function removeLinkedProperty($object, $property, $module) {
+    $value=SQLSelectOne("SELECT * FROM pvalues WHERE ID='".getValueIdByName($object, $property)."'");
+    if ($value['ID']) {
+     if (!$value['LINKED_MODULES']) {
+      $tmp=array();
+     } else {
+      $tmp=explode(',', $value['LINKED_MODULES']);
+     }
+     if (in_array($module, $tmp)) {
+      $total=count($tmp);
+      $res=array();
+      for($i=0;$i<$total;$i++) {
+       if ($tmp[$i]!=$module) {
+        $res[]=$tmp[$i];
+       }
+      }
+      $tmp=$res;
+      $value['LINKED_MODULES']=implode(',', $tmp);
+      SQLUpdate('pvalues', $value);
+     }
+    } else {
+     return 0;
+    }
+  }
+
 /**
 * Title
 *
@@ -41,7 +106,7 @@
  * @return array|int
  */
  function getObjectsByClass($class_name) {
-  $class_record=SQLSelectOne("SELECT ID FROM classes WHERE TITLE LIKE '".DBSafe(trim($class_name))."'");
+  $class_record=SQLSelectOne("SELECT ID FROM classes WHERE (TITLE LIKE '".DBSafe(trim($class_name))."' OR ID=".(int)$class_name.")");
   if (!$class_record['ID']) {
    return 0;
   }
@@ -167,8 +232,30 @@
 * @access public
 */
   function processTitle($title, $object=0) {
+
+   if (!$title) {
+    return $title;
+   }
+
    startMeasure('processTitle');
-   startMeasure('processTitle ['.$title.']');
+
+   $in_title=substr($title, 0, 100);
+
+   startMeasure('processTitle ['.$in_title.']');
+
+   if ($in_title!='') {
+
+
+   if (preg_match('/\[#.+?#\]/is', $title)) {
+    if ($object) {
+     $jTempl=new jTemplate($title, $object->data, $object);
+    } else {
+     $jTempl=new jTemplate($title, $data, $this);
+    }
+    $title=$jTempl->result;
+   }
+
+
    $title=preg_replace('/%rand%/is', rand(), $title);
    if (preg_match_all('/%([\w\d\.]+?)\.([\w\d\.]+?)%/is', $title, $m)) {
     $total=count($m[0]);
@@ -178,6 +265,9 @@
    } elseif (preg_match_all('/%([\w\d\.]+?)%/is', $title, $m)) {
     $total=count($m[0]);
     for($i=0;$i<$total;$i++) {
+     if (preg_match('/^%\d/is', $m[0][$i])) {
+      continue; // dirty hack, sorry for that
+     }
      $title=str_replace($m[0][$i], getGlobal($m[1][$i]), $title);
     }
    }
@@ -185,23 +275,20 @@
    if (preg_match_all('/<#LANG_(\w+?)#>/is', $title, $m)) {
     $total=count($m[0]);
     for($i=0;$i<$total;$i++) {
-     
+     $title=str_replace($m[0][$i], constant('LANG_'.$m[1][$i]), $title);
     }
+   }
+
+   if (preg_match_all('/\&#060#LANG_(.+?)#\&#062/is', $title, $m)) {
+    $total=count($m[0]);
     for($i=0;$i<$total;$i++) {
      $title=str_replace($m[0][$i], constant('LANG_'.$m[1][$i]), $title);
     }
    }
 
-   if (preg_match('/\[#.+?#\]/is', $title)) {
-    if ($object) {
-     $jTempl=new jTemplate($title, $object->data, $object);
-    } else {
-     $jTempl=new jTemplate($title, $data, $this);
-    }
-    $result=$jTempl->result;
-    $title=$jTempl->result;
    }
-   endMeasure('processTitle ['.$title.']', 1);
+
+   endMeasure('processTitle ['.$in_title.']', 1);
    endMeasure('processTitle', 1);
    return $title;
   }
@@ -218,6 +305,10 @@
  }
 
  function cm($method_name, $params=0) {
+  return callMethod($method_name, $params);
+ }
+
+ function runMethod($method_name, $params=0) {
   return callMethod($method_name, $params);
  }
 

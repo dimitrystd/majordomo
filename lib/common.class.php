@@ -17,6 +17,11 @@
  {
         global $commandLine;
         global $voicemode;
+        global $noPatternMode;
+        global $ignorePushover;
+        global $ignorePushbullet;
+        global $ignoreGrowl;
+        global $ignoreTwitter;
 
          /*
           if ($commandLine) {
@@ -40,8 +45,8 @@
          eval(SETTINGS_HOOK_BEFORE_SAY);
         }
 
-        if ($level >= (int)getGlobal('minMsgLevel'))
-        { 
+        global $ignoreVoice;
+        if ($level >= (int)getGlobal('minMsgLevel') && !$ignoreVoice) { 
                 //$voicemode!='off' && 
 
            $lang='en';
@@ -59,8 +64,9 @@
            }
 
            if (!defined('SETTINGS_SPEAK_SIGNAL') || SETTINGS_SPEAK_SIGNAL=='1') {
-              $passed=SQLSelectOne("SELECT (UNIX_TIMESTAMP(NOW())-UNIX_TIMESTAMP(ADDED)) as PASSED FROM shouts WHERE ID!='".$rec['ID']."' ORDER BY ID DESC LIMIT 1");
-              if ($passed['PASSED']>20) { // play intro-sound only if more than 30 seconds passed from the last one
+              $passed=time()-(int)getGlobal('lastSayTime');
+              if ($passed>20) { // play intro-sound only if more than 20 seconds passed from the last one
+                    setGlobal('lastSayTime', time());
                     playSound('dingdong', 1, $level);
                   }
            }
@@ -73,19 +79,14 @@
            }
         }
 
-        global $noPatternMode;
         if (!$noPatternMode) {
                 include_once(DIR_MODULES.'patterns/patterns.class.php');
                 $pt=new patterns();
                 $pt->checkAllPatterns();
         }
 
-        if (defined('SETTINGS_HOOK_AFTER_SAY') && SETTINGS_HOOK_AFTER_SAY!='') {
-         eval(SETTINGS_HOOK_AFTER_SAY);
-        }
 
-
-        if (defined('SETTINGS_PUSHOVER_USER_KEY') && SETTINGS_PUSHOVER_USER_KEY) {
+        if (defined('SETTINGS_PUSHOVER_USER_KEY') && SETTINGS_PUSHOVER_USER_KEY && !$ignorePushover) {
                 include_once(ROOT.'lib/pushover/pushover.inc.php');
                 if (defined('SETTINGS_PUSHOVER_LEVEL')){
                         if($level>=SETTINGS_PUSHOVER_LEVEL) {
@@ -96,7 +97,24 @@
                 }
         }
 
-        if (defined('SETTINGS_GROWL_ENABLE') && SETTINGS_GROWL_ENABLE && $level>=SETTINGS_GROWL_LEVEL) {
+        if (defined('SETTINGS_PUSHBULLET_KEY') && SETTINGS_PUSHBULLET_KEY && !$ignorePushbullet) {
+                include_once(ROOT.'lib/pushbullet/pushbullet.inc.php');
+                if (defined('SETTINGS_PUSHBULLET_PREFIX') && SETTINGS_PUSHBULLET_PREFIX) {
+                 $prefix=SETTINGS_PUSHBULLET_PREFIX.' ';
+                } else {
+                 $prefix='';
+                }
+
+                if (defined('SETTINGS_PUSHBULLET_LEVEL')){
+                        if($level>=SETTINGS_PUSHBULLET_LEVEL) {
+                                postToPushbullet($prefix.$ph);
+                        }
+                } elseif ($level>0) {
+                        postToPushbullet($prefix.$ph);
+                }
+        }
+
+        if (defined('SETTINGS_GROWL_ENABLE') && SETTINGS_GROWL_ENABLE && $level>=SETTINGS_GROWL_LEVEL && !$ignoreGrowl) {
          include_once(ROOT.'lib/growl/growl.gntp.php');
          $growl = new Growl(SETTINGS_GROWL_HOST, SETTINGS_GROWL_PASSWORD);
          $growl->setApplication('MajorDoMo','Notifications');
@@ -104,7 +122,14 @@
          $growl->notify($ph);
         }
 
-        postToTwitter($ph);
+        if (defined('SETTINGS_TWITTER_CKEY') && SETTINGS_TWITTER_CKEY && !$ignoreTwitter) {
+         postToTwitter($ph);
+        }
+
+        if (defined('SETTINGS_HOOK_AFTER_SAY') && SETTINGS_HOOK_AFTER_SAY!='') {
+         eval(SETTINGS_HOOK_AFTER_SAY);
+        }
+
 
  }
 
@@ -377,17 +402,11 @@
    $jobs[$i]['PROCESSED']=1;
    $jobs[$i]['STARTED']=date('Y-m-d H:i:s');
    SQLUpdate('jobs', $jobs[$i]);
-
-                  try {
-                   $code=$jobs[$i]['COMMANDS'];
-                   $success=eval($code);
-                   if ($success===false) {
-                    DebMes("Error in scheduled job code: ".$code);
-                   }
-                  } catch(Exception $e){
-                   DebMes('Error: exception '.get_class($e).', '.$e->getMessage().'.');
-                  }
-
+   $url=BASE_URL.'/objects/?job='.$jobs[$i]['ID'];
+   $result=trim(getURL($url, 0));
+   if ($result!='OK') {
+    DebMes("Error executing job ".$jobs[$i]['TITLE']." (".$jobs[$i]['ID']."): ".$result);
+   }
   }
  }
 
@@ -522,19 +541,33 @@
 */
  function playSound($filename, $exclusive=0, $priority=0) {
 
+  global $ignoreSound;
+
   if (file_exists(ROOT.'sounds/'.$filename.'.mp3')) {
    $filename=ROOT.'sounds/'.$filename.'.mp3';
   } elseif (file_exists(ROOT.'sounds/'.$filename)) {
    $filename=ROOT.'sounds/'.$filename;
   }
 
-  if (file_exists($filename)) {
-   if (substr(php_uname(), 0, 7) == "Windows") {
-    safe_exec(DOC_ROOT.'/rc/madplay.exe '.$filename, $exclusive, $priority);
-   } else {
-    safe_exec('mplayer ' . $filename, $exclusive, $priority);
+  if (defined('SETTINGS_HOOK_BEFORE_PLAYSOUND') && SETTINGS_HOOK_BEFORE_PLAYSOUND!='') {
+   eval(SETTINGS_HOOK_BEFORE_PLAYSOUND);
+  }
+
+  if (!$ignoreSound) {
+   if (file_exists($filename)) {
+    if (substr(php_uname(), 0, 7) == "Windows") {
+     safe_exec(DOC_ROOT.'/rc/madplay.exe '.$filename, $exclusive, $priority);
+    } else {
+     safe_exec('mplayer ' . $filename, $exclusive, $priority);
+    }
    }
   }
+
+  if (defined('SETTINGS_HOOK_AFTER_PLAYSOUND') && SETTINGS_HOOK_AFTER_PLAYSOUND!='') {
+   eval(SETTINGS_HOOK_AFTER_PLAYSOUND);
+  }
+
+
  }
 
 /**
@@ -583,7 +616,12 @@
  function runScript($id, $params='') {
   include_once(DIR_MODULES.'scripts/scripts.class.php');
   $sc=new scripts();
-  $sc->runScript($id, $params);
+  return $sc->runScript($id, $params);
+ }
+
+
+ function callScript($id, $params='') {
+  runScript($id, $params);
  }
 
 /**
@@ -601,14 +639,19 @@
    curl_setopt($ch, CURLOPT_URL, $url);
    curl_setopt($ch, CURLOPT_USERAGENT, 'Opera/9.80 (Windows NT 6.1; WOW64) Presto/2.12.388 Version/12.14');
    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-   curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+   curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15 );
    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);     // bad style, I know...
    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2); 
-   curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-   if ($username!='') {
+   curl_setopt($ch, CURLOPT_TIMEOUT, 15 );
+   if ($username!='' || $password!='') {
     curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC ) ;
     curl_setopt($ch, CURLOPT_USERPWD, $username.":".$password); 
    }
+
+   $tmpfname = ROOT.'cached/cookie.txt';
+   curl_setopt($ch, CURLOPT_COOKIEJAR, $tmpfname);
+   curl_setopt($ch, CURLOPT_COOKIEFILE, $tmpfname);
+
    $result = curl_exec($ch);
    if ($cache>0) {
     if (!is_dir(ROOT.'cached/urls')) {
@@ -649,10 +692,12 @@
  function execInBackground($cmd) {
     if (substr(php_uname(), 0, 7) == "Windows"){
         //pclose(popen("start /B ". $cmd, "r")); 
-
          try {
-          $WshShell = new COM("WScript.Shell");
-          $oExec = $WshShell->Run("cmd /C ".$cmd, 0, false);
+          //pclose(popen("start /B ". $cmd, "r")); 
+          system($cmd);
+          //$WshShell = new COM("WScript.Shell");
+          //$oExec = $WshShell->Run("cmd /C ".$cmd, 0, false);
+          //exec($cmd);
          } catch(Exception $e){
           DebMes('Error: exception '.get_class($e).', '.$e->getMessage().'.');
          }
@@ -721,5 +766,46 @@
   include_once(DIR_MODULES.'security_rules/security_rules.class.php');
   $sc=new security_rules();
   return $sc->checkAccess($object_type, $object_id);
+ }
+
+/**
+* Title
+*
+* Description
+*
+* @access public
+*/
+ function registerError($code='custom', $details='') {
+  $code=trim($code);
+  if (!$code) {
+   $code='custom';
+  }
+  $error_rec=SQLSelectOne("SELECT * FROM system_errors WHERE CODE LIKE '".DBSafe($code)."'");
+  if (!$error_rec['ID']) {
+   $error_rec['CODE']=$code;
+   $error_rec['KEEP_HISTORY']=1;
+   $error_rec['ID']=SQLInsert('system_errors', $error_rec);
+  }
+  $error_rec['LATEST_UPDATE']=date('Y-m-d H:i:s');
+  $error_rec['ACTIVE']=(int)$error_rec['ACTIVE']+1;
+  SQLUpdate('system_errors', $error_rec);
+
+  $history_rec=array();
+  $history_rec['ERROR_ID']=$error_rec['ID'];
+  $history_rec['COMMENTS']=$details;
+  $history_rec['ADDED']=$error_rec['LATEST_UPDATE'];
+
+  $history_rec['PROPERTIES_DATA']=getURL(BASE_URL.ROOTHTML.'popup/xray.html?ajax=1&md=xray&op=getcontent&view_mode=', 0);
+  $history_rec['METHODS_DATA']=getURL(BASE_URL.ROOTHTML.'popup/xray.html?ajax=1&md=xray&op=getcontent&view_mode=methods', 0);
+  $history_rec['SCRIPTS_DATA']=getURL(BASE_URL.ROOTHTML.'popup/xray.html?ajax=1&md=xray&op=getcontent&view_mode=scripts', 0);
+  $history_rec['TIMERS_DATA']=getURL(BASE_URL.ROOTHTML.'popup/xray.html?ajax=1&md=xray&op=getcontent&view_mode=timers', 0);
+  $history_rec['EVENTS_DATA']=getURL(BASE_URL.ROOTHTML.'popup/xray.html?ajax=1&md=xray&op=getcontent&view_mode=events', 0);
+  $history_rec['DEBUG_DATA']=getURL(BASE_URL.ROOTHTML.'popup/xray.html?ajax=1&md=xray&op=getcontent&view_mode=debmes', 0);
+
+  $history_rec['ID']=SQLInsert('system_errors_data', $history_rec);
+
+  if (!$error_rec['KEEP_HISTORY']) {
+   SQLExec("DELETE FROM system_errors_data WHERE ID!='".$history_rec['ID']."'");
+  }
  }
 

@@ -12,6 +12,7 @@ $dictionary=array(
 
 /* general */
 'WIKI_URL'=>'http://majordomohome.com/',
+'DEFAULT_COMPUTER_NAME'=>'Alice',
 'WELCOME_GREETING'=>'Welcome!',
 'WELCOME_TEXT'=>'Thank you for using MajorDoMo -- an open-source home automation platform. <br/><br/>Read more about it and join our community: <a href="<#LANG_WIKI_URL#>" target=_blank>Web-site</a> | <a href="<#LANG_WIKI_URL#>forum/" target=_blank>Forum</a> | <a href="https://www.facebook.com/SmartLivingRu" target=_blank>Facebook page</a> <br/>&nbsp;<br/>&nbsp;<br/><small>P.S. You can customize or delete this page using <a href="/admin.php?pd=&md=panel&inst=&action=layouts">Control Panel</a> (login/password: admin / admin)</small>',
 'CONTROL_PANEL'=>'Control Panel',
@@ -41,6 +42,23 @@ $dictionary=array(
 'GENERAL_EVENTS_LOG'=>'Events log',
 
 'GENERAL_SERVICE'=>'Service',
+
+'GENERAL_GREEN'=>'Green',
+'GENERAL_YELLOW'=>'Yellow',
+'GENERAL_RED'=>'Red',
+'GENERAL_CHANGED_TO'=>'changed to',
+'GENERAL_RESTORED_TO'=>'restored to',
+'GENERAL_SYSTEM_STATE'=>'System state',
+'GENERAL_SECURITY_STATE'=>'Security state',
+'GENERAL_COMMUNICATION_STATE'=>'Communication state',
+'GENERAL_STOPPED'=>'stopped',
+'GENERAL_CYCLE'=>'cycle',
+'GENERAL_NO_INTERNET_ACCESS'=>'No Interet access',
+'GENERAL_SETTING_UP_LIGHTS'=>'Setting lights',
+'GENERAL_CONTROL'=>'Control',
+'GENERAL_INSIDE'=>'Inside',
+'GENERAL_OUTSIDE'=>'Outside',
+
 
 'SECTION_OBJECTS'=>'Objects',
 'SECTION_APPLICATIONS'=>'Applications',
@@ -78,7 +96,7 @@ $dictionary=array(
 'MODULE_EVENTS'=>'Events',
 'MODULE_JOBS'=>'Scheduled Jobs',
 'MODULE_MASTER_LOGIN'=>'Panel Login',
-'MODULE_SAVERESTORE'=>'Backup/Upgrade',
+'MODULE_SAVERESTORE'=>'Check updates',
 'MODULE_WEBVARS'=>'Web Variables',
 
 'MODULE_DASHBOARD'=>'Dashboard',
@@ -99,8 +117,14 @@ $dictionary=array(
 'MODULE_ZWAVE'=>'Z-Wave',
 'MODULE_SECURITY_RULES'=>'Security Rules',
 'MODULE_MQTT'=>'MQTT',
+'MODULE_MODBUS'=>'ModBus',
 'MODULE_CONNECT'=>'CONNECT',
 'MODULE_MARKET'=>'Plugins Market',
+'MODULE_MYBLOCKS'=>'My blocks',
+'MODULE_TEXTFILES'=>'Text files',
+'MODULE_SOUNDFILES'=>'Sound files',
+'MODULE_SYSTEM_ERRORS'=>'System Errors', 
+'MODULE_MODULES'=>'Modules', 
 
 'SETUP'=>'Setup', // objects/objects_edit_methods.html; 
 
@@ -182,7 +206,7 @@ $dictionary=array(
 
 
 'ADD_NEW_RECORD'=>'Add new record', // patterns/patterns_search_admin.html; users/users_search_admin.html; pvalues/pvalues_search_admin.html; events/events_search_admin.html; app_products/product_categories_search_admin.html; app_tdwiki/tdwiki_search_admin.html; watchfolders/watchfolders_search_admin.html; terminals/terminals_search_admin.html; app_gpstrack/gpsdevices_search_admin.html; app_gpstrack/gpslocations_search_admin.html; app_gpstrack/gpsactions_search_admin.html; 
-
+'EDIT_RECORD'=>'Edit record',  //users
 
 'NO_RECORDS_FOUND'=>'No records found', // patterns/patterns_search_admin.html; scripts/scripts_search_admin.html; settings/settings_search_site.html; settings/settings_search_admin.html; users/users_search_admin.html; methods/methods_search_admin.html; commands/commands_search_pda.html; commands/commands_search_admin.html; pvalues/pvalues_search_admin.html; classes/classes_search_admin.html; locations/locations_search_admin.html; usbdevices/action_admin.html; pinghosts/pinghosts_search_admin.html; rss_channels/rss_items_search_admin.html; rss_channels/rss_channels_search_admin.html; events/events_search_admin.html; events/events_search_site.html; layouts/layouts_search_site.html; layouts/layouts_search_admin.html; app_products/product_categories_search_site.html; app_products/products_search_admin.html; app_products/products_search_site.html; app_products/shopping_list_items_search_site.html; app_products/product_categories_search_admin.html; app_products/shopping_list_items_search_admin.html; app_tdwiki/tdwiki_search_admin.html; app_tdwiki/tdwiki_search_site.html; watchfolders/watchfolders_search_admin.html; webvars/webvars_search_admin.html; properties/properties_search_admin.html; scenes/scenes_search_admin.html; scenes/elements_search_admin.html; terminals/terminals_search_admin.html; app_gpstrack/gpsdevices_search_admin.html; app_gpstrack/gpslog_search_admin.html; app_gpstrack/gpslocations_search_admin.html; app_gpstrack/gpsactions_search_admin.html; userlog/userlog_search_admin.html; 
 'COMMAND'=>'Command', // jobs/action_admin.html; commands/commands_edit.html; shoutbox/shouts_search_site.html; 
@@ -234,6 +258,7 @@ $dictionary=array(
 
 'PARENT_METHODS'=>'Parent methods:', // methods/methods_search_admin.html; 
 'OVERWRITE'=>'Overwrite', // methods/methods_search_admin.html; classes/classes_search_admin.html; properties/properties_search_admin.html; 
+'ONLY_CLASSES'=>'Do not import objects',
 
 
 'NEW_METHOD'=>'New method', // methods/methods_edit.html; 
@@ -276,6 +301,7 @@ $dictionary=array(
 
 
 'TEXT_BOX'=>'Text field', // commands/commands_edit.html; 
+'DATE_BOX'=>'Date field', // commands/commands_edit.html; 
 
 
 'CUSTOM_HTML_BOX'=>'Custom HTML-code', // commands/commands_edit.html; 
@@ -369,6 +395,8 @@ $dictionary=array(
 'ADD_NEW_CLASS'=>'Add new class', // classes/classes_search_admin.html; 
 'OBJECTS'=>'Objects', // classes/classes_search_admin.html; classes/classes_search_admin.html; classes/action_admin.html; 
 'EXPORT'=>'Export', // classes/classes_search_admin.html; 
+'EXPORT_CLASS_FULL'=>'Export Class and Objects', // classes/classes_search_admin.html; 
+'EXPORT_CLASS_NO_OBJECTS'=>'Export Class (w/o Objects)', // classes/classes_search_admin.html; 
 
 
 'IMPORT_CLASS_FROM_FILE'=>'Import class from file', // classes/classes_search_admin.html; 
@@ -695,6 +723,7 @@ $dictionary=array(
 
 
 'DO_NOT_KEEP'=>'do not keep history', // properties/properties_edit.html; 
+'KEEP_HISTORY'=>'keep history',
 
 
 'PARENT_PROPERTIES'=>'Parent properties', // properties/properties_search_admin.html; 
@@ -727,14 +756,18 @@ $dictionary=array(
 
 'SCENE'=>'Scene',
 'ADD_NEW_SCENE'=>'Add new scene', // scenes/scenes_search_admin.html; 
+'USE_ELEMENT_TO_POSITION_RELATED'=>'Use element to position related',
+'NO_RELATED'=>'None, position from top left corner',
 'TOP'=>'Top', // scenes/elements_edit.html; 
 'LEFT'=>'Left', // scenes/elements_edit.html; 
 'STATES'=>'States', // scenes/elements_edit.html; 
 'ADD_NEW_STATE'=>'Add new state', // scenes/elements_edit.html; scenes/elements_edit.html; 
 
 
-'RUN_SCCRIPT_ON_CLICK'=>'Run script on click', // scenes/elements_edit.html; 
+'RUN_SCRIPT_ON_CLICK'=>'Run script on click', // scenes/elements_edit.html; 
 'SHOW_MENU_ON_CLICK'=>'Show menu on click',
+'SHOW_HOMEPAGE_ON_CLICK'=>'Show page on click',
+'SHOW_URL_ON_CLICK'=>'Show URL on click',
 
 
 'DISPLAY_CONDITION'=>'Display condition', // scenes/elements_edit.html; 
@@ -795,6 +828,30 @@ $dictionary=array(
 
 'VIRTUAL_USER'=>'Virtual User', // app_gpstrack/gpslocations_edit.html; 
 
+'WIND'=>'Wind',//lib/OpenWeather/OpenWeather.php;
+'PRESSURE'=>'Pressure',//lib/OpenWeather/OpenWeather.php;
+'HUMIDITY'=>'Humidity',//lib/OpenWeather/OpenWeather.php;
+'GET_AT'=>'get at',//lib/OpenWeather/OpenWeather.php;
+'MMHG'=>'mmhg',//lib/OpenWeather/OpenWeather.php;
+'HPA'=>'hpa',//lib/OpenWeather/OpenWeather.php;
+'M_S'=>'m/s',//lib/OpenWeather/OpenWeather.php;
+'N'=>'N',//lib/OpenWeather/OpenWeather.php;
+'NNE'=>'NNE',//lib/OpenWeather/OpenWeather.php;
+'NE'=>'NE',//lib/OpenWeather/OpenWeather.php;
+'ENE'=>'ENE',//lib/OpenWeather/OpenWeather.php;
+'E'=>'E',//lib/OpenWeather/OpenWeather.php;
+'ESE'=>'ESE',//lib/OpenWeather/OpenWeather.php;
+'SE'=>'SE',//lib/OpenWeather/OpenWeather.php;
+'SSE'=>'SSE',//lib/OpenWeather/OpenWeather.php;
+'S'=>'S',//lib/OpenWeather/OpenWeather.php;
+'SSW'=>'SSW',//lib/OpenWeather/OpenWeather.php;
+'SW'=>'SW',//lib/OpenWeather/OpenWeather.php;
+'WSW'=>'WSW',//lib/OpenWeather/OpenWeather.php;
+'W'=>'W',//lib/OpenWeather/OpenWeather.php;
+'WNW'=>'WNW',//lib/OpenWeather/OpenWeather.php;
+'NW'=>'NW',//lib/OpenWeather/OpenWeather.php;
+'NNW'=>'NNW',//lib/OpenWeather/OpenWeather.php;
+
 'LONG_OPERATION_WARNING'=>'Note: This operation can take up to few minutes.<Br>Please, be patient :)',
 
 'STARRED'=>'Starred',
@@ -802,7 +859,8 @@ $dictionary=array(
 'USE_BACKGROUND'=>'Use background',
 'YES'=>'Yes',
 'NO'=>'No',
-'USE_JAVASCRIPT'=>'Use JavaScript',
+'USE_JAVASCRIPT'=>'Add custom JavaScript',
+'USE_CSS'=>'Add custom CSS',
 
 'PERIOD'=>'Period',
 'PERIOD_TODAY'=>'Today',
@@ -867,6 +925,76 @@ $dictionary=array(
 
 'SETTINGS_SECTION_'=>'General',
 'SETTINGS_SECTION_HOOK'=>'Hooks',
+
+'DEVICE_ID'=>'Device ID',
+'REQUEST_TYPE'=>'Request type',
+'REQUEST_START'=>'Start address',
+'REQUEST_TOTAL'=>'Items to read',
+'RESPONSE_CONVERT'=>'Data conversion',
+'CHECK_NEXT'=>'Next check',
+
+'CODE_TYPE'=>'Use for scripting',
+
+'GENERAL'=>'General',
+'TIME'=>'Time',
+'LOGIC'=>'Logic',
+'LOOPS'=>'Loops',
+'MATH'=>'Math',
+'TEXT'=>'Text',
+'LISTS'=>'Lists',
+'VARIABLES'=>'Variables',
+'FUNCTIONS'=>'Functions',
+
+'SCENE_HIDDEN'=>'Do not include in to the swappable list of scenes', 
+
+'DO_NOTHING'=>'Do nothing',
+'DO_ONCLICK'=>'On click',
+'STYLE'=>'Style',
+'PLACE_IN_CONTAINER'=>'Place in container',
+'POSITION_TYPE'=>'Positioning',
+'POSITION_TYPE_ABSOLUTE'=>'Absolute',
+'POSITION_TYPE_SIDE'=>'Side by side',
+
+'CONTAINER'=>'Container',
+'INFORMER'=>'Informer',
+'NAV_LINK'=>'Nav. link (window)',
+
+'TOOLS'=>'Tools',
+'COLOR'=>'Color',
+'WALLPAPER'=>'Wallpaper',
+
+'WARNING'=>'Warning',
+'NAV_LINK_GO'=>'Nav. link',
+'MODE_SWITCH'=>'Mode switch',
+'ADDITIONAL_STATES'=>'Additional states',
+'HIGH_ABOVE'=>'Value high above',
+'LOW_BELOW'=>'Value low below',
+'ADDITIONAL_STATES_NOTE'=>'(you can use %object.property% for the limits)',
+'UNIT'=>'Unit',
+'COUNTER'=>'Counter',
+'USE_CLASS_SETTINGS'=>'use class settings',
+
+'USING_LATEST_VERSION'=>'You are using the latest version!',
+'LATEST_UPDATES'=>'Latest updates',
+'UPDATE_TO_THE_LATEST'=>'Update to the latest code',
+'SAVE_BACKUP'=>'Save Backup',
+'CREATE_BACKUP'=>'Create Backup',
+'UPLOAD_BACKUP'=>'Upload backup/updates', 
+'CONTINUE'=>'Continue', 
+'RESTORE'=>'Restore', 
+'SHOW'=>'Show', 
+'HIDE'=>'Hide', 
+'UPDATING'=>'Incl. in updates',
+'NOT_UPDATING'=>'Not updating',
+
+'SCRIPTS'=>'Scripts',
+'CLASSES'=>'Classes',
+'CLASS_PROPERTIES'=>'Class properties',
+'CLASS_METHODS'=>'Class methods',
+'CLASS_OBJECTS'=>'Class objects',
+'OBJECT_PROPERTIES'=>'Object properties',
+'OBJECT_METHODS'=>'Object methods',
+
 
 'TEST'=>'test'
 

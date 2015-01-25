@@ -22,6 +22,10 @@ while(!$connected)
    sleep(5);
 }
 
+if (file_exists('./reboot')) {
+ @unlink('./reboot');
+}
+
 // connecting to database
 $db = new mysql(DB_HOST, '', DB_USER, DB_PASSWORD, DB_NAME); 
  
@@ -58,13 +62,14 @@ if ($lib_dir = @opendir("./scripts"))
 
 $threads = new Threads;
 
-if (substr(php_uname(), 0, 7) == "Windows") 
-{
-   $threads->phpPath = WINDOWS_PHP_PATH;
-}
-else 
-{
-   $threads->phpPath = 'php';
+if (defined('PATH_TO_PHP')) {
+ $threads->phpPath = PATH_TO_PHP;
+} else {
+ if (substr(php_uname(), 0, 7) == "Windows") {
+  $threads->phpPath = WINDOWS_PHP_PATH;
+ } else {
+  $threads->phpPath = 'php';
+ }
 }
 
 foreach($cycles as $path) 
@@ -107,10 +112,40 @@ foreach($cycles as $path)
 
 echo "ALL CYCLES STARTED\n";
 
+if (!is_array($restart_threads)) {
+ $restart_threads=array(
+                       'cycle_execs.php', 
+                       'cycle_main.php', 
+                       'cycle_ping.php', 
+                       'cycle_rss.php', 
+                       'cycle_scheduler.php', 
+                       'cycle_states.php', 
+                       'cycle_watchfolders.php', 
+                       'cycle_webvars.php');
+}
+
 while (false !== ($result = $threads->iteration())) 
 {
-   if (!empty($result))  echo $result."\r\n";
+   if (!empty($result))  {
+    //echo "Res: ".$result."\n---------------------\n";
+    if (preg_match_all('/THREAD CLOSED:.+?(\.\/scripts\/cycle\_.+?\.php)/is', $result, $matches) && !file_exists('./reboot')) {
+     $total_m=count($matches[1]);
+     for($im=0;$im<$total_m;$im++) {
+      $closed_thread=$matches[1][$im];
+      foreach($restart_threads as $item) {
+       if (preg_match('/'.$item.'/is', $closed_thread)) {
+        //restart
+        DebMes("RESTARTING: ".$closed_thread);
+        echo "RESTARTING: ".$closed_thread."\n";
+        registerError('cycle_stop', $closed_thread);
+        $pipe_id = $threads->newThread($closed_thread);
+       }
+      }
+     }
+    }
+   }
 }
+
 
 @unlink('./reboot');
 

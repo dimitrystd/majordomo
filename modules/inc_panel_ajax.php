@@ -7,13 +7,30 @@
    header ('Content-Type: text/html; charset=utf-8');
   }
 
+  if ($op=='console') {
+   global $command;
+   if (preg_match('/^\w+\.\w+$/', $command)) {
+    echo callMethod($command);
+   } elseif (preg_match('/;/', $command)) {
+    eval($command);
+   } else {
+    eval('echo '.$command.';');
+   }
+  }
+
   if ($op=='filter') {
    global $title;
 
+   $object_title='';
+   $property_title='';
+
    if (preg_match('/^(.+)\.$/', $title, $m)) {
-    $object=SQLSelectOne("SELECT * FROM objects WHERE TITLE LIKE '".DBSafe($m[1])."'");
+    
+    $object_title=$m[1];
+
+    $object=SQLSelectOne("SELECT * FROM objects WHERE TITLE LIKE '".DBSafe($object_title)."'");
     if ($object['ID']) {
-     $res.=LANG_OBJECT." <b>".$object['TITLE']."</b><br>";
+     $res.=LANG_OBJECT." <b><a href='/panel/class/".$object['CLASS_ID']."/object/".$object['ID'].".html'>".$object['TITLE']."</a></b><br>";
 
      $class=SQLSelectOne("SELECT * FROM classes WHERE ID='".$object['CLASS_ID']."'");
      if ($class['ID']) {
@@ -28,7 +45,7 @@
     $res.=''.$object['TITLE'];
     $res.='.'.$properties[$i]['TITLE'].'<br>';
    }
-   $methods=SQLSelect("SELECT methods.ID, methods.TITLE, methods.OBJECT_ID, methods.CLASS_ID, classes.TITLE as CLASS, objects.TITLE as OBJECT FROM methods LEFT JOIN classes ON methods.CLASS_ID=classes.ID LEFT JOIN objects ON methods.OBJECT_ID=objects.ID WHERE (methods.OBJECT_ID = '".DBSafe($object['ID'])."' OR methods.CLASS_ID = '".DBSafe($object['CLASS_ID'])."') ORDER BY methods.OBJECT_ID DESC, methods.TITLE");
+   $methods=SQLSelect("SELECT methods.ID, methods.TITLE, methods.OBJECT_ID, methods.CLASS_ID, classes.TITLE as CLASS, objects.TITLE as OBJECT, objects.CLASS_ID as OBJECT_CLASS_ID FROM methods LEFT JOIN classes ON methods.CLASS_ID=classes.ID LEFT JOIN objects ON methods.OBJECT_ID=objects.ID WHERE (methods.OBJECT_ID = '".DBSafe($object['ID'])."' OR methods.CLASS_ID = '".DBSafe($object['CLASS_ID'])."') ORDER BY methods.OBJECT_ID DESC, methods.TITLE");
    $total=count($methods);
    $res.='<a href="/panel/class/'.$object['CLASS_ID'].'/object/'.$object['ID'].'/methods.html">'.LANG_METHODS."</a>:<br>";
    for($i=0;$i<$total;$i++) {
@@ -38,7 +55,7 @@
     }
     $seen[$key]=1;
     if ($methods[$i]['OBJECT']) {
-     $res.='<a href="/panel/object/'.$methods[$i]['OBJECT_ID'].'/methods/'.$methods[$i]['ID'].'.html">'.$methods[$i]['OBJECT'];
+     $res.='<a href="/panel/class/'.$methods[$i]['OBJECT_CLASS_ID'].'/object/'.$methods[$i]['OBJECT_ID'].'/methods/'.$methods[$i]['ID'].'.html">'.$methods[$i]['OBJECT'];
     } else {
      $res.='<a href="/panel/class/'.$methods[$i]['CLASS_ID'].'/methods/'.$methods[$i]['ID'].'.html">'.$methods[$i]['CLASS'];
     }
@@ -109,7 +126,7 @@
     $res.='.'.$properties[$i]['TITLE'].'</a><br>';
    }
 
-   $methods=SQLSelect("SELECT methods.ID, methods.TITLE, methods.OBJECT_ID, objects.CLASS_ID as OBJECT_CLASS_ID, methods.CLASS_ID, classes.TITLE as CLASS, objects.TITLE as OBJECT FROM methods LEFT JOIN classes ON methods.CLASS_ID=classes.ID LEFT JOIN objects ON methods.OBJECT_ID=objects.ID WHERE methods.TITLE LIKE '%".DBSafe($title)."%' ORDER BY methods.TITLE");
+   $methods=SQLSelect("SELECT methods.ID, methods.TITLE, methods.OBJECT_ID, objects.CLASS_ID as OBJECT_CLASS_ID, methods.CLASS_ID, classes.TITLE as CLASS, objects.TITLE as OBJECT FROM methods LEFT JOIN classes ON methods.CLASS_ID=classes.ID LEFT JOIN objects ON methods.OBJECT_ID=objects.ID WHERE (methods.TITLE LIKE '%".DBSafe($title)."%' OR methods.CODE LIKE '%".DBSafe($title)."%') ORDER BY methods.TITLE");
    $total=count($methods);
    for($i=0;$i<$total;$i++) {
     $res.='M: '; //<a href="#">
@@ -121,17 +138,42 @@
     $res.='.'.$methods[$i]['TITLE'].'</a><br>';
    }
    //scripts
-   $scripts=SQLSelect("SELECT ID, TITLE FROM scripts WHERE TITLE LIKE '%".DBSafe($title)."%' ORDER BY TITLE");
+   $scripts=SQLSelect("SELECT ID, TITLE FROM scripts WHERE (TITLE LIKE '%".DBSafe($title)."%' OR CODE LIKE '%".DBSafe($title)."%') ORDER BY TITLE");
    $total=count($scripts);
    for($i=0;$i<$total;$i++) {
     $res.='Script: <a href="/panel/script/'.$scripts[$i]['ID'].'.html">'.$scripts[$i]['TITLE'].'</a><br>';
    }
-   //menu elements
-   $commands=SQLSelect("SELECT ID, TITLE FROM commands WHERE TITLE LIKE '%".DBSafe($title)."%' ORDER BY TITLE");
+   //patterns
+   $patterns=SQLSelect("SELECT ID, TITLE FROM patterns WHERE (TITLE LIKE '%".DBSafe($title)."%' OR SCRIPT LIKE '%".DBSafe($title)."%' OR PATTERN LIKE '%".DBSafe($title)."%') ORDER BY TITLE");
+   $total=count($patterns);
+   for($i=0;$i<$total;$i++) {
+    $res.='Pattern: <a href="/panel/pattern/'.$patterns[$i]['ID'].'.html">'.$patterns[$i]['TITLE'].'</a><br>';
+   }
+   //menu elements (to-do: content)
+   $commands=SQLSelect("SELECT ID, TITLE FROM commands WHERE (TITLE LIKE '%".DBSafe($title)."%' OR LINKED_OBJECT LIKE '%".DBSafe($title)."%' OR LINKED_PROPERTY LIKE '%".DBSafe($title)."%' OR ONCHANGE_METHOD LIKE '%".DBSafe($title)."%' OR CODE LIKE '%".DBSafe($title)."%') ORDER BY TITLE");
    $total=count($commands);
    for($i=0;$i<$total;$i++) {
     $res.='Menu: <a href="/panel/command/'.$commands[$i]['ID'].'.html">'.$commands[$i]['TITLE'].'</a><br>';
    }
+
+   //scene states
+   $states=SQLSelect("SELECT elm_states.ID, elm_states.TITLE, ELEMENT_ID, elements.SCENE_ID, elements.TITLE as ELEMENT_TITLE FROM elm_states LEFT JOIN elements ON elements.ID=elm_states.ELEMENT_ID WHERE (elm_states.LINKED_OBJECT LIKE '%".DBSafe($title)."%' OR elm_states.LINKED_PROPERTY LIKE '%".DBSafe($title)."%' OR elm_states.ACTION_METHOD LIKE '%".DBSafe($title)."%' OR elm_states.CONDITION_ADVANCED LIKE '%".DBSafe($title)."%' OR elm_states.CONDITION_VALUE LIKE '%".DBSafe($title)."%') AND elements.ID>0 ORDER BY elm_states.TITLE");
+   $total=count($states);
+   for($i=0;$i<$total;$i++) {
+    $res.='Scene: <a href="/panel/scene/'.$states[$i]['SCENE_ID'].'/elements/'.$states[$i]['ELEMENT_ID'].'/state'.$states[$i]['ID'].'.html">'.$states[$i]['ELEMENT_TITLE'].'.'.$states[$i]['TITLE'].'</a><br>';
+   }
+
+   //zwave devices
+   if (file_exists(DIR_MODULES.'zwave/zwave.class.php')) {
+    $devices=SQLSelect("SELECT ID, DEVICE_ID, TITLE FROM zwave_properties WHERE (TITLE LIKE '%".DBSafe($title)."%' OR LINKED_OBJECT LIKE '%".DBSafe($title)."%' OR LINKED_PROPERTY LIKE '%".DBSafe($title)."%') ORDER BY TITLE");
+    $total=count($devices);
+    for($i=0;$i<$total;$i++) {
+     $res.='ZWave: <a href="/panel/zwave/'.$devices[$i]['DEVICE_ID'].'.html">'.$devices[$i]['TITLE'].'</a><br>';
+    }
+   }
+
+   //to-do: webvars
+
 
    echo $res;
   }

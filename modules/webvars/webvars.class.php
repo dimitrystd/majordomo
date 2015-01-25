@@ -139,12 +139,35 @@ function admin(&$out) {
   if ($this->view_mode=='edit_webvars') {
    $this->edit_webvars($out, $this->id);
   }
+
+  if ($this->view_mode=='clone') {
+   $this->clone_webvar($this->id);
+  }
+
   if ($this->view_mode=='delete_webvars') {
    $this->delete_webvars($this->id);
    $this->redirect("?");
   }
  }
 }
+
+/**
+* Title
+*
+* Description
+*
+* @access public
+*/
+ function clone_webvar($id) {
+  $rec=SQLSelectOne("SELECT * FROM webvars WHERE ID='".(int)$id."'");
+  $rec['TITLE'].=' (copy)';
+  unset($rec['ID']);
+  $rec['LOG']='';
+  $rec['LATEST_VALUE']='';
+  $rec['ID']=SQLInsert('webvars', $rec);
+  $this->redirect("?view_mode=edit_webvars&id=".$rec['ID']);
+ }
+
 /**
 * FrontEnd
 *
@@ -220,7 +243,7 @@ function usual(&$out) {
    } else {
     $content=getURL(processTitle($host['HOSTNAME']), $host['ONLINE_INTERVAL']);
    }
-   
+
    if ($host['ENCODING']!='') {
     $content=iconv($host['ENCODING'], "UTF-8", $content);
    }
@@ -244,9 +267,19 @@ function usual(&$out) {
    if ($host['CHECK_PATTERN'] && !preg_match('/'.$host['CHECK_PATTERN'].'/is', $new_status)) {
     $ok=0; // result did not pass the check
    }
+
+   if (strlen($new_status)>50*1024) {
+    $new_status=substr($new_status, 0, 50*1024);
+   }
    
    if (!$ok) {
     $host['LOG']=date('Y-m-d H:i:s').' incorrect value:'.$new_status."\n".$host['LOG'];
+    $tmp=explode("\n", $host['LOG']);
+    $total=count($tmp);
+    if ($total>50) {
+     $tmp=array_slice($tmp, -50, 50);
+     $host['LOG']=implode("\n", $tmp);
+    }
     SQLUpdate('webvars', $host);
     continue;
    }
@@ -257,6 +290,12 @@ function usual(&$out) {
 
    if ($old_status!=$new_status) {
      $host['LOG']=date('Y-m-d H:i:s').' new value:'.$new_status."\n".$host['LOG'];
+     $tmp=explode("\n", $host['LOG']);
+     $total=count($tmp);
+     if ($total>50) {
+      $tmp=array_slice($tmp, -50, 50);
+      $host['LOG']=implode("\n", $tmp);
+     }
    }
 
    $host['LATEST_VALUE']=$new_status;

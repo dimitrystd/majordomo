@@ -1,33 +1,148 @@
+<ul class="breadcrumb">
+<li> 
+<a href="?"><#LANG_HOME#></a>
+</li>
+<span class="divider">/</span>
+<li>
+[#TITLE#]
+</li>
 
-<!-- Table 'zwave_devices' edit -->
-<form action="?" method="post" enctype="multipart/form-data" name="frmEdit" class="form-horizontal">
+</ul>
+
+
+<ul class="nav nav-tabs">
+ <li [#if TAB=""#]class="active"[#endif#]><a href="?data_source=<#DATA_SOURCE#>&view_mode=<#VIEW_MODE#>&id=<#ID#>&tab="><#LANG_DETAILS#></a></li>
+ [#if CLASS_CONFIG="1"#]
+ <li [#if TAB="config"#]class="active"[#endif#]><a href="?data_source=<#DATA_SOURCE#>&view_mode=<#VIEW_MODE#>&id=<#ID#>&tab=config">Config</a></li>
+ [#endif#]
+ <li [#if TAB="raw"#]class="active"[#endif#]><a href="?data_source=<#DATA_SOURCE#>&view_mode=<#VIEW_MODE#>&id=<#ID#>&tab=raw">Raw Data</a></li>
+</ul>
+
+&nbsp;
+
 [#if OK#]
 <div class="alert alert-success"><#LANG_DATA_SAVED#></div>
 [#endif OK#]
 [#if ERR#]
 <div class="alert alert-error"><#LANG_FILLOUT_REQURED#></div>
 [#endif ERR#]
+
+
+[#if TAB="config"#]
+<form action="?" method="post" enctype="multipart/form-data" name="frmEdit" class="form-horizontal">
+<fieldset>
+ <label class="control-label"[#if ERR_TITLE#] style="color:red;font-weight:bold"[#endif#]>
+ Vendor/Product:
+ </label>
+ <div class="controls">
+ <select name="xmlfile" class="input form-control">
+  <option value="">
+  [#begin PRODUCTS#]
+  <option value="[#FILE#]"[#if FILE="<#XMLFILE#>"#] selected[#endif#]>[#BRAND#] [#TITLE#]
+  [#end PRODUCTS#]
+ </select>
+ </div>
+
+[#if IMAGE_URL#]
+<p>
+<img src="[#IMAGE_URL#]" border="0">
+</p>
+[#endif#]
+[#if DETAILS_URL#]
+<p>
+ <a href="[#DETAILS_URL#]" target=_blank>More info...</a>
+</p>
+[#endif#]
+
+[#if PARAMS#]
+&nbsp;
+<table width="100%" border="0" class="table">
+ <tr>
+  <td valign="top"><b>NUM</b></td>
+  <td valign="top"><b>NAME</b></td>
+  <td valign="top"><b>DESCRIPTION</b></td>
+ </tr>
+ [#begin PARAMS#]
+ <tr>
+  <td valign="top">[#NUMBER#]</td>
+  <td valign="top">[#NAME#]<br/>
+  Default: [#DEFAULT#], Size: [#SIZE#]
+  <br>
+   Set: <input type="text" name="config[#NUMBER#]">
+   <br/><input type="checkbox" name="configdefault[#NUMBER#]" value="1"> set default
+  </td>
+  <td valign="top">[#DESCRIPTION#]</td>
+ </tr>
+ [#end PARAMS#]
+</table>
+[#endif PARAMS#]
+
+&nbsp;
+
+<table border="0">
+ <tr>
+  <td valign="top">Custom parameter number:</td>
+  <td valign="top"><input type="text" name="custom_config_number"></td>
+ </tr>
+ <tr>
+  <td valign="top">Custom parameter value:</td>
+  <td valign="top"><input type="text" name="custom_config_value"></td>
+ </tr>
+ <tr>
+  <td valign="top">Custom parameter size (bytes):</td>
+  <td valign="top">
+   <input type="radio" name="custom_config_size" value="1" checked> 1
+   <input type="radio" name="custom_config_size" value="2"> 2
+   <input type="radio" name="custom_config_size" value="4"> 4
+  </td>
+ </tr>
+</table>
+
+&nbsp;
+<div class="form-actions">
+ [#if ID!=""#]
+ <button type="submit" name="subm" value="Submit" class="btn btn-primary"><#LANG_SUBMIT#></button>
+ [#else ID#]
+ <button type="submit" name="subm" value="Add" class="btn btn-primary"><#LANG_ADD#></button>
+ [#endif ID#]
+ <a href="?data_source=<#DATA_SOURCE#>" class="btn btn-default"><#LANG_CANCEL#></a>
+<input type="hidden" name="id" value="<#ID#>">
+<input type="hidden" name="view_mode" value="<#VIEW_MODE#>">
+<input type="hidden" name="edit_mode" value="<#EDIT_MODE#>">
+<input type="hidden" name="mode" value="update">
+<input type="hidden" name="tab" value="<#TAB#>">
+<input type="hidden" name="data_source" value="<#DATA_SOURCE#>">
+</div>
+</fieldset>
+</form>
+
+
+[#endif TAB#]
+
+[#if TAB=""#]
+<!-- Table 'zwave_devices' edit -->
+<form action="?" method="post" enctype="multipart/form-data" name="frmEdit" class="form-horizontal">
 <fieldset>
 [#if ID=""#]
 <legend><#LANG_NEW_RECORD#></legend>
 [#endif ID#]
 <!-- TITLE (varchar) -->
-<div class="control-group">
+<div class="form-group">
  <label class="control-label"[#if ERR_TITLE#] style="color:red;font-weight:bold"[#endif#]>
  <#LANG_TITLE#>:
  (*)
  </label>
- <div class="controls"><input type="text" name="title" value="[#TITLE#]" class="input"></div>
+ <div class="controls"><input type="text" name="title" value="[#TITLE#]" class="input form-control"></div>
 </div>
 
 <!-- LOCATION_ID (select) -->
 [#if !IS_SET_LOCATION_ID#]
-<div class="control-group">
+<div class="form-group">
  <label class="control-label"[#if ERR_LOCATION_ID#] style="color:red;font-weight:bold"[#endif#]>
  <#LANG_LOCATION#>:
  </label>
 <div class="controls">
- <select name="location_id" class="input">
+ <select name="location_id" class="input form-control">
   <option value="">select
   [#begin LOCATION_ID_OPTIONS#]<option value="[#ID#]"[#if SELECTED#] selected[#endif#]>[#TITLE#]
   [#end LOCATION_ID_OPTIONS#]
@@ -36,7 +151,7 @@
 </div>
 [#endif IS_SET_LOCATION_ID#]
 
-<div class="control-group">
+<div class="form-group">
  <label class="control-label">
   &nbsp;
  </label>
@@ -49,12 +164,15 @@
    [#if CLASS_METER="1"#]meter;[#endif#]
    [#if CLASS_BATTERY="1"#]battery operated;[#endif#]
    [#if CLASS_THERMOSTAT="1"#]thermostat;[#endif#]
+   [#if CLASS_SENSOR_ALARM="1"#]sensor alarm;[#endif#]
+   [#if CLASS_SCENE_CONTROLLER="1"#]scene controller;[#endif#]
+   [#if CLASS_CONFIG="1"#]configuration;[#endif#]
    [#if ALL_CLASSES!=""#]<span title="[#ALL_CLASSES#]">...</span>[#endif#]
  </div>
 </div>
 
 [#if CLASS_BASIC="1"#]
-<div class="control-group">
+<div class="form-group">
  <label class="control-label">
  Basic:
  </label>
@@ -65,7 +183,7 @@
 [#endif CLASS_BASIC#]
 
 [#if CLASS_SWITCH_BINARY="1" || CLASS_SWITCH_MULTILEVEL="1" || CLASS_SENSOR_BINARY="1"#]
-<div class="control-group">
+<div class="form-group">
  <label class="control-label">
  Level:
  </label>
@@ -76,7 +194,7 @@
 [#endif CLASS_BASIC#]
 
 [#if CLASS_SENSOR_MULTILEVEL="1"#]
-<div class="control-group">
+<div class="form-group">
  <label class="control-label">
  Sensor data:
  </label>
@@ -87,7 +205,7 @@
 [#endif#]
 
 [#if CLASS_THERMOSTAT="1"#]
-<div class="control-group">
+<div class="form-group">
  <label class="control-label">
  Thermostat mode:
  </label>
@@ -98,7 +216,7 @@
 [#endif#]
 
 [#if CLASS_BATTERY="1"#]
-<div class="control-group">
+<div class="form-group">
  <label class="control-label">
  Battery level, %:
  </label>
@@ -109,26 +227,60 @@
 [#endif CLASS_BATTERY#]
 
 [#if PROPERTIES#]
-<div class="control-group">
+<div class="form-group">
  <label class="control-label">
  <#LANG_PROPERTIES#>:
  </label>
 <div class="controls">
  <table border="1" cellpadding="3">
   <tr>
+   <td valign="top"><b>Code</b></td>
    <td valign="top"><b><#LANG_TITLE#></b></td>
    <td valign="top"><b><#LANG_VALUE#></b></td>
+   <td valign="top"><b><#LANG_UPDATED#></b></td>
    <td valign="top">
-    <b><#LANG_LINKED_OBJECT#>.<#LANG_PROPERTY#></b>
+    <b><#LANG_LINKED_OBJECT#></b><br>(<#LANG_OPTIONAL#>)
    </td>
+   <td valign="top"><b><#LANG_PROPERTY#></b><br>(<#LANG_OPTIONAL#>)</td>
+   <td valign="top"><b><#LANG_METHOD#></b><br>(<#LANG_OPTIONAL#>)</td>
+   <td valign="top"><b><#LANG_AUTO_UPDATE_PERIOD#>,</b><br><#LANG_SECONDS#> (<#LANG_OPTIONAL#>)</td>
+   <td valign="top"><b>Valid range</b><br>(<#LANG_OPTIONAL#>)</td>
+  <td valign="top"><b>Correction</b><br>(<#LANG_OPTIONAL#>)</td>
+   <td valign="top"><b><#LANG_DELETE#></b></td>
   </tr>
   [#begin PROPERTIES#]
   <tr>
+   <td valign="top">[#COMMAND_CLASS#]</td>
    <td valign="top">[#TITLE#]</td>
-   <td valign="top">[#VALUE#]</td>
+   <td valign="top">[#VALUE#][#if COMMENTS!=""#]<br><small>[#COMMENTS#]</small>[#endif COMMENTS#]</td>
+   <td valign="top">[#UPDATED#]</td>
    <td valign="top">
-    <input type="text" name="linked_object[#ID#]" value="[#LINKED_OBJECT#]" class="span2">.
-    <input type="text" name="linked_property[#ID#]" value="[#LINKED_PROPERTY#]" class="span2">
+    <input type="text" name="linked_object[#ID#]" id="linked_object[#ID#]" value="[#LINKED_OBJECT#]" class="span2 form-control">
+   </td>
+   <td valign="top">
+    <input type="text" name="linked_property[#ID#]" id="linked_property[#ID#]" value="[#LINKED_PROPERTY#]" class="span2 form-control">
+   </td>
+   <td valign="top">
+    <input type="text" name="linked_method[#ID#]" id="linked_method[#ID#]" value="[#LINKED_METHOD#]" class="span2 form-control">
+    [#module name="linkedobject" object_field="linked_object<#PROPERTIES.ID#>" property_field="linked_property<#PROPERTIES.ID#>" method_field="linked_method<#PROPERTIES.ID#>" width="200"#]
+   </td>
+   <td valign="top">
+    <input type="text" name="update_period[#ID#]" value="[#UPDATE_PERIOD#]" class="span2 form-control">
+   </td>
+   <td valign="top">
+    <nobr><input type="checkbox" name="validate[#ID#]" value="1"[#if VALIDATE="1"#] checked[#endif#] onClick="$('#validatebox[#ID#]').toggle();">
+    <span id="validatebox[#ID#]" [#if VALIDATE!="1"#] style="display:none"[#endif#]>
+    <input type="text" name="valid_from[#ID#]" value="[#VALID_FROM#]" size="3">
+    ...
+    <input type="text" name="valid_to[#ID#]" value="[#VALID_TO#]" size="3">
+    </span>
+    </nobr>
+   </td>
+   <td valign="top">
+    <input type="text" name="correct_value[#ID#]" value="[#CORRECT_VALUE#]" size="3">
+   </td>
+   <td valign="top">
+    <input type="checkbox" name="delete_property[#ID#]" value="1">
    </td>
   </tr>
   [#end PROPERTIES#]
@@ -138,19 +290,19 @@
 [#endif PROPERTIES#]
 
 <!--#
-<div class="control-group">
+<div class="form-group">
  <label class="control-label"[#if ERR_STATUS#] style="color:red;font-weight:bold"[#endif#]>
  STATUS:
  </label>
  <div class="controls"><input type="text" name="status" value="[#STATUS#]" class="input"></div>
 </div>
-<div class="control-group">
+<div class="form-group">
  <label class="control-label"[#if ERR_AUTO_POLL#] style="color:red;font-weight:bold"[#endif#]>
  AUTO_POLL:
  </label>
  <div class="controls"><input type="text" name="auto_poll" value="[#AUTO_POLL#]" class="input"></div>
 </div>
-<div class="control-group">
+<div class="form-group">
  <label class="control-label"[#if ERR_LATEST_UPDATE#] style="color:red;font-weight:bold"[#endif#]>
  LATEST_UPDATE:
  </label>
@@ -179,7 +331,7 @@
  [#else ID#]
  <button type="submit" name="subm" value="Add" class="btn btn-primary"><#LANG_ADD#></button>
  [#endif ID#]
- <a href="?data_source=<#DATA_SOURCE#>" class="btn"><#LANG_CANCEL#></a>
+ <a href="?data_source=<#DATA_SOURCE#>" class="btn btn-default"><#LANG_CANCEL#></a>
 <input type="hidden" name="id" value="<#ID#>">
 <input type="hidden" name="view_mode" value="<#VIEW_MODE#>">
 <input type="hidden" name="edit_mode" value="<#EDIT_MODE#>">
@@ -188,3 +340,14 @@
 </div>
 </fieldset>
 </form>
+
+[#endif TAB#]
+
+
+[#if TAB="raw"#]
+<div id="rawData">
+<pre>
+[#RAW_DATA#]
+</pre>
+</div>
+[#endif TAB#]

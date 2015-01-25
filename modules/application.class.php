@@ -244,7 +244,7 @@ function getParams() {
 
 
    if ($out["DOC_NAME"]) {
-    $doc=SQLSelectOne("SELECT ID FROM cms_docs WHERE NAME LIKE '".DBSafe($out['DOC_NAME'])."'");
+    //$doc=SQLSelectOne("SELECT ID FROM cms_docs WHERE NAME LIKE '".DBSafe($out['DOC_NAME'])."'");
     if ($doc['ID']) {
      $this->doc=$doc['ID'];
     }
@@ -254,7 +254,7 @@ function getParams() {
     $out['AUTHORIZED_ADMIN']=1;
    }
 
-   if ($this->action=='') {
+   if ($this->action=='' || $this->action=='pages') {
     $res=SQLSelect("SELECT * FROM layouts ORDER BY PRIORITY DESC, TITLE");
     if ($this->action!='admin') {
      $total=count($res);
@@ -281,6 +281,10 @@ function getParams() {
 
    if ($session->data['MY_MEMBER']) {
     $out['MY_MEMBER']=$session->data['MY_MEMBER'];
+    $tmp=SQLSelectOne("SELECT ID FROM users WHERE ID='".(int)$out['MY_MEMBER']."' AND ACTIVE_CONTEXT_ID!=0 AND TIMESTAMPDIFF(SECOND, ACTIVE_CONTEXT_UPDATED, NOW())>600");
+    if ($tmp['ID']) {
+     SQLExec("UPDAE users SET ACTIVE_CONTEXT_ID=0, ACTIVE_CONTEXT_EXTERNAL=0 WHERE ID='".$tmp['ID']."'");
+    }
    }
 
    $out['AJAX']=$this->ajax;
@@ -300,6 +304,12 @@ function getParams() {
 
    if ($this->action=='menu') {
     $template_file=DIR_TEMPLATES."menu.html";
+   }
+   if ($this->action=='pages') {
+    $template_file=DIR_TEMPLATES."pages.html";
+   }
+   if ($this->action=='scenes') {
+    $template_file=DIR_TEMPLATES."scenes.html";
    }
 
 

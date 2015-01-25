@@ -55,6 +55,14 @@
 <ul data-role="listview" data-inset="true">
 [#endif ONE_ITEM_MODE#]
 
+<!--#
+<li>
+<div id="debugField" style="white-space:normal;">...</div>
+</li>
+#-->
+
+
+
 [#begin RESULT#]
 
 [#if SUB_PRELOAD="1"#]
@@ -73,7 +81,7 @@
 <a
  [#if !RESULT_TOTAL#]
  href="#" 
- onClick="return menuClicked('[#ID#]', '[#PARENT_ID#]', '[#SUB_LIST#]', '[#WINDOW#]', '[#TITLE#]', '[#COMMAND#]', '[#URL#]'[#if TYPE="window"#], '[#WIDTH#]', '[#HEIGHT#]'[#else#],0,0[#endif TYPE#]);"
+ onClick="return menuClicked('[#ID#]', '[#PARENT_ID#]', '[#SUB_LIST#]', '[#WINDOW#]', '[#TITLE_SAFE#]', '[#COMMAND#]', '[#URL#]'[#if TYPE="window"#], '[#WIDTH#]', '[#HEIGHT#]'[#else#],0,0[#endif TYPE#]);"
  [#else RESULT_TOTAL#]
  href="<#ROOTHTML#>menu/[#ID#].html"
  [#endif RESULT_TOTAL#]
@@ -83,6 +91,22 @@
 <span id="label_[#ID#]">[#TITLE#]</span><!--#[#if RESULT_TOTAL#] <span class="ui-li-count">[#RESULT_TOTAL#]</span>[#endif#]#--></a>
 </li>
 [#endif TYPE#]
+
+[#if TYPE=="urlblank"#]
+<li[#if VISIBLE_DELAY!="0"#] class='visible_delay'[#endif#] id='item[#ID#]'>
+<a
+ [#if !RESULT_TOTAL#]
+ href="[#URL#]" target=_blank
+ [#else RESULT_TOTAL#]
+ href="<#ROOTHTML#>menu/[#ID#].html"
+ [#endif RESULT_TOTAL#]
+>
+[#if ICON!=""#]<img src="<#ROOTHTML#>cms/icons/[#ICON#]" alt="" class="ui-li-icon" style="left:4px;top:0.4em;max-height:32px;max-width:32px;height:32px;width:32px;">[#endif#]
+<span id="label_[#ID#]">[#TITLE#]</span></a>
+</li>
+
+[#endif TYPE#]
+
 [#endif SUB_PRELOAD#]
 
 
@@ -106,8 +130,8 @@
 
         <label for="menu[#ID#]_v"><span id="label_[#ID#]">[#TITLE#]</span><span id="processing_[#ID#]"></span></label>
         <select name="menu[#ID#]_v" id="menu[#ID#]_v" data-role="slider"  onChange="changedValue[#ID#]();">
-                <option value="0"[#if CUR_VALUE!="1"#] selected[#endif#]><#LANG_OFF#></option>
-                <option value="1"[#if CUR_VALUE="1"#] selected[#endif#]><#LANG_ON#></option>
+                <option value="[#OFF_VALUE#]"[#if CUR_VALUE!="<#RESULT.ON_VALUE#>"#] selected[#endif#]><#LANG_OFF#></option>
+                <option value="[#ON_VALUE#]"[#if CUR_VALUE=="<#RESULT.ON_VALUE#>"#] selected[#endif#]><#LANG_ON#></option>
         </select> 
 </li>
 [#endif TYPE#]
@@ -142,6 +166,41 @@
 </li>
 [#endif TYPE#]
 
+[#if TYPE=="radiobox"#]
+<script language="javascript">
+ var item[#ID#]_timer=0;
+ function changedValue[#ID#](new_value) {
+  if (valueChangedFlag['item[#ID#]']==1) {
+   valueChangedFlag['item[#ID#]']=0;
+   return;
+  }
+  //var elem=document.getElementById('menu[#ID#]_v');
+  itemValueChanged("[#ID#]", new_value);
+  return false;
+ }
+</script>
+<li data-role="fieldcontain"[#if VISIBLE_DELAY!="0"#]  class='visible_delay'[#endif#] id='item[#ID#]'>
+<label for="menu[#ID#]_v" class="select"><span id="label_[#ID#]">[#TITLE#]</span><span id="processing_[#ID#]"></span></label>
+
+
+    <fieldset data-role="controlgroup" data-type="horizontal">
+    [#begin OPTIONS#]
+     <input type="radio" name="menu<#RESULT.ID#>_v" class="radiobox<#RESULT.ID#>" id="menu<#RESULT.ID#>_v_[#NUM#]" value="[#VALUE#]" [#if SELECTED#]checked="checked"[#endif SELECTED#]  onClick="changedValue<#RESULT.ID#>('[#VALUE#]');"/>
+     <label for="menu<#RESULT.ID#>_v_[#NUM#]">[#TITLE#]</label>
+     [#end OPTIONS#]
+    </fieldset>
+
+<!--#
+<select name="menu[#ID#]_v" id="menu[#ID#]_v" onChange="changedValue[#ID#]();">
+ [#begin OPTIONS#]
+ <option value="[#VALUE#]"[#if SELECTED#] selected[#endif#]>[#TITLE#]
+ [#end OPTIONS#]
+</select>
+#-->
+</li>
+[#endif TYPE#]
+
+
 
 [#if TYPE=="timebox"#]
 <script language="javascript">
@@ -172,10 +231,30 @@
  [#end OPTIONS2#]
 </select>
 </fieldset>
-
-
 </li>
 [#endif TYPE#]
+
+
+[#if TYPE=="datebox"#]
+
+<script language="javascript">
+ var item[#ID#]_timer=0;
+ function changedValue[#ID#]_delay() {
+  clearTimeout(item[#ID#]_timer);
+  var elem=document.getElementById('menu[#ID#]_v');
+  item[#ID#]_timer=setTimeout('itemValueChanged("[#ID#]", "'+elem.value+'")', 500);
+  return false;
+ }
+</script>
+<li data-role="fieldcontain"[#if VISIBLE_DELAY!="0"#]  class='visible_delay'[#endif#] id='item[#ID#]'>
+<span id="label_[#ID#]">[#TITLE#]</span><span id="processing_[#ID#]"></span>
+
+<div data-inline="true" data-role="fieldcontain">
+ <input type="date" id="menu[#ID#]_v" name="menu[#ID#]_value" value="[#CUR_VALUE#]" data-inline="true" onChange="changedValue[#ID#]_delay()" onKeyUp="changedValue[#ID#]_delay();">
+</div>
+</li>
+[#endif TYPE#]
+
 
 [#if TYPE=="plusminus"#]
 <script language="javascript">
@@ -183,7 +262,7 @@
  function increaseValue[#ID#]() {
   var elem=document.getElementById('menu[#ID#]_v');
   var elem2=document.getElementById('menu[#ID#]_vv');
-  var v=parseInt(elem.value);
+  var v=parseFloat(elem.value);
   if ((v+[#STEP_VALUE#])<=[#MAX_VALUE#]) {
    elem.value=v+[#STEP_VALUE#];
    elem2.innerHTML=elem.value;
@@ -195,7 +274,7 @@
  function decreaseValue[#ID#]() {
   var elem=document.getElementById('menu[#ID#]_v');
   var elem2=document.getElementById('menu[#ID#]_vv');
-  var v=parseInt(elem.value);
+  var v=parseFloat(elem.value);
   if ((v-[#STEP_VALUE#])>=[#MIN_VALUE#]) {
    elem.value=v-[#STEP_VALUE#];
    elem2.innerHTML=elem.value;
@@ -311,7 +390,7 @@
  function updateValue[#ID#]_Ready(id, data) {
 
  var obj=jQuery.parseJSON(data);
- if (obj.DATA!='') {
+ if (typeof obj.DATA != 'undefined') {
   data=obj.DATA;
   [#if TYPE=="textbox"#]
    if ($('#menu[#ID#]_v').val()!=data) {
@@ -326,9 +405,39 @@
    }
   [#endif#]
 
-  [#if TYPE=="switch"#]
+  [#if TYPE=="radiobox"#]
+   var $selected = $('.radiobox[#ID#]:checked');
+   if (!$selected.length || $selected.val()!=data) {
+    //alert('zz');
+    //$selected.attr('checked', false).checkboxradio("refresh");
+    $( ".radiobox[#ID#]" ).each(function( index ) {
+     if ($( this ).val()!=data) {
+      //alert('not found: '+$( this ).val()+' != '+data)
+      $( this ).prop('checked', false).checkboxradio("refresh");
+     } else {
+      //alert('found: '+$( this ).val())
+      $( this ).prop('checked', true).checkboxradio("refresh");
+     }
+    });
+    //$(".radiobox[#ID#]").checkboxradio("refresh");
+    //$(".radiobox[#ID#]:first").attr("checked",true).checkboxradio("refresh");
+   }
+   /*
    if ($('#menu[#ID#]_v').val()!=data) {
     $('#menu[#ID#]_v').val(data);
+   }
+   */
+  [#endif#]
+
+
+  [#if TYPE=="switch"#]
+   //alert('[#TITLE#]'+"\nValue:"+$('#menu[#ID#]_v').val()+"\nData:"+data);
+   if ($('#menu[#ID#]_v').val()!=data) {
+    if (data=='[#ON_VALUE#]') {
+     $('#menu[#ID#]_v').val('[#ON_VALUE#]');
+    } else {
+     $('#menu[#ID#]_v').val('[#OFF_VALUE#]');
+    }
     $('#menu[#ID#]_v').slider('refresh');
    }
   [#endif TYPE#]
@@ -347,12 +456,19 @@
 
  function updateLabel[#ID#]() {
   clearTimeout(label[#ID#]_timer);
+
+  collectLabel([#ID#]);
+  /*
   var url="<#ROOTHTML#>menu.html?ajax=1&op=get_label";
   AJAXRequest(url+'&item_id=[#ID#]', 'updateLabel[#ID#]_Ready', '');
+  */
 
-  [#if TYPE=="switch" || TYPE=="textbox" || TYPE=="sliderbox" || TYPE=="selectbox"#]
+  [#if TYPE=="switch" || TYPE=="textbox" || TYPE=="sliderbox" || TYPE=="selectbox" || TYPE=="radiobox"#]
+  /*
   var url2="?ajax=1&op=get_value";
   AJAXRequest(url2+'&item_id=[#ID#]', 'updateValue[#ID#]_Ready', '');
+  */
+  collectValue([#ID#]);
   [#endif TYPE#]
 
   label[#ID#]_timer=setTimeout('updateLabel[#ID#]()', ([#AUTO_UPDATE#]*1000));
