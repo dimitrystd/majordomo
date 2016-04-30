@@ -9,13 +9,13 @@
 
  Define('TIME_ZONE', "Europe/Kiev");
 
- Define('DB_HOST', $_ENV['DB_HOST']);
- Define('DB_NAME', $_ENV['DB_NAME']);
- Define('DB_USER', $_ENV['DB_USER']);
- Define('DB_PASSWORD', $_ENV['DB_PASSWORD']);
+ Define('DB_HOST', getenv('DB_HOST'));
+ Define('DB_NAME', getenv('DB_NAME'));
+ Define('DB_USER', getenv('DB_USER'));
+ Define('DB_PASSWORD', getenv('DB_PASSWORD'));
 
- Define('GMAIL_USER', $_ENV['MAIL_USER']);
- Define('GMAIL_PASSWORD', $_ENV['EMAIL_PASSWORD']);
+ Define('GMAIL_USER', getenv('MAIL_USER'));
+ Define('GMAIL_PASSWORD', getenv('EMAIL_PASSWORD'));
 
 
  Define('DIR_TEMPLATES', "./templates/");
@@ -70,4 +70,5 @@ error_reporting(E_ALL ^ E_NOTICE);
                        'cycle_scheduler.php',
                        'cycle_states.php',
                        'cycle_webvars.php',
-                       'cycle_mercurypower.php');
+                       //'cycle_mercurypower.php'
+                   );
