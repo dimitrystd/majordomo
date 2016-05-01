@@ -37,7 +37,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 
  Define('DOC_ROOT', dirname(__FILE__));              // Your htdocs location (should be detected automatically)
 
- Define('SERVER_ROOT', '/var/www/html');
+ Define('SERVER_ROOT', '/var/www');
 
 
  if ($_ENV["S2G_BASE_URL"]) {
@@ -54,7 +54,7 @@ error_reporting(E_ALL ^ E_NOTICE);
  //Define('ONEWIRE_SERVER', 'tcp://localhost:8234');    // 1-wire OWFS server
 
 
- Define('HOME_NETWORK', '192.168.99.*');                  // home network (optional)
+ Define('HOME_NETWORK', '192.168.0.*');                  // home network (optional)
  Define('EXT_ACCESS_USERNAME', $_SERVER['EXT_ACCESS_USERNAME']);  // access details for external network (internet)
  Define('EXT_ACCESS_PASSWORD', $_SERVER['EXT_ACCESS_PASSWORD']);
 
