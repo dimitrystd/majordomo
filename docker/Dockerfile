@@ -63,17 +63,20 @@ RUN ln -s /etc/php5/cli/conf.d/opcache-recommended.ini /etc/php5/apache2/conf.d/
 
 # Install Majordomo from github
 RUN apt-get update && apt-get install -y git \
+  # Clone git repo
   && cd /tmp \
   && git clone https://github.com/dimitrystd/majordomo.git \
   && cp -rfp /tmp/majordomo/* /var/www/ \
   && cp -rfp /tmp/majordomo/.htaccess /var/www/ \
   && rm -rf /tmp/majordomo \
+  # Uninstall and purge
   && apt-get --purge autoremove -y git \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY ./files/config.php /var/www/config.php
-
+# Create required folders for running scripts
+RUN mkdir /var/www/cached
 RUN chown www-data:www-data -R /var/www \
   && chmod +x /var/www/*.sh
 
