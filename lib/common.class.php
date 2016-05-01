@@ -13,7 +13,7 @@
 *
 * @access public
 */
- function say($ph, $level=0) 
+ function say($ph, $level=0)
  {
         global $commandLine;
         global $voicemode;
@@ -36,9 +36,9 @@
         $rec['ADDED']     = date('Y-m-d H:i:s');
         $rec['ROOM_ID']   = 0;
         $rec['MEMBER_ID'] = 0;
- 
+
         if ($level>0) $rec['IMPORTANCE']=$level;
-        
+
         $rec['ID'] = SQLInsert('shouts', $rec);
 
         if (defined('SETTINGS_HOOK_BEFORE_SAY') && SETTINGS_HOOK_BEFORE_SAY!='') {
@@ -46,8 +46,8 @@
         }
 
         global $ignoreVoice;
-        if ($level >= (int)getGlobal('minMsgLevel') && !$ignoreVoice) { 
-                //$voicemode!='off' && 
+        if ($level >= (int)getGlobal('minMsgLevel') && !$ignoreVoice) {
+                //$voicemode!='off' &&
 
            $lang='en';
            if (defined('SETTINGS_SITE_LANGUAGE')) {
@@ -192,7 +192,7 @@
   } elseif ($h>=21) {
    $hw='часа';
   }
-  
+
   $m=(int)date('i',$tm);
     if ($m==1 || $m==21 || $m==31 || $m==41 || $m==51) {
      $ms=$m." минута";
@@ -203,7 +203,7 @@
      } elseif ($m==0) {
        $ms="";
      }
-         
+
   $res="$h ".($hw)." ".($ms);
   return $res;
  }
@@ -221,7 +221,7 @@
   } else {
    return false;
   }
-  
+
  }
 /**
 * Title
@@ -473,7 +473,7 @@
 * @access public
 */
  function registerEvent($eventName, $details='', $expire_in=365) {
-  
+
   $rec=array();
   $rec=SQLSelectOne("SELECT * FROM events WHERE EVENT_NAME='".DBSafe($eventName)."' AND EVENT_TYPE='system' ORDER BY ID DESC LIMIT 1");
   $rec['EVENT_NAME']=$eventName;
@@ -641,11 +641,11 @@
    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15 );
    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);     // bad style, I know...
-   curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2); 
+   curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
    curl_setopt($ch, CURLOPT_TIMEOUT, 15 );
    if ($username!='' || $password!='') {
     curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC ) ;
-    curl_setopt($ch, CURLOPT_USERPWD, $username.":".$password); 
+    curl_setopt($ch, CURLOPT_USERPWD, $username.":".$password);
    }
 
    $tmpfname = ROOT.'cached/cookie.txt';
@@ -691,9 +691,9 @@
 */
  function execInBackground($cmd) {
     if (substr(php_uname(), 0, 7) == "Windows"){
-        //pclose(popen("start /B ". $cmd, "r")); 
+        //pclose(popen("start /B ". $cmd, "r"));
          try {
-          //pclose(popen("start /B ". $cmd, "r")); 
+          //pclose(popen("start /B ". $cmd, "r"));
           system($cmd);
           //$WshShell = new COM("WScript.Shell");
           //$oExec = $WshShell->Run("cmd /C ".$cmd, 0, false);
@@ -704,9 +704,9 @@
 
     }
     else {
-        exec($cmd . " > /dev/null &");  
+        exec($cmd . " > /dev/null &");
     }
-} 
+}
 
  function getFilesTree($destination) {
 
@@ -720,8 +720,8 @@
     return $res;
   }
 
- if ($dir = @opendir($destination)) { 
-  while (($file = readdir($dir)) !== false) { 
+ if ($dir = @opendir($destination)) {
+  while (($file = readdir($dir)) !== false) {
     if (Is_Dir($destination."/".$file) && ($file!='.') && ($file!='..')) {
      $tmp=getFilesTree($destination."/".$file);
      if (is_array($tmp)) {
@@ -732,8 +732,8 @@
     } elseif (Is_File($destination."/".$file)) {
      $res[]=($destination."/".$file);
     }
-  }     
-  closedir($dir); 
+  }
+  closedir($dir);
  }
  return $res;
  }
@@ -808,4 +808,3 @@
    SQLExec("DELETE FROM system_errors_data WHERE ID!='".$history_rec['ID']."'");
   }
  }
-
