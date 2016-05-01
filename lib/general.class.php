@@ -9,7 +9,6 @@
  * @version 1.3
  */
 
-error_reporting(E_ALL ^ E_NOTICE);
 
 if (defined('HOME_NETWORK') && HOME_NETWORK != '' && !isset($argv[0])
     && (!(preg_match('/\/gps\.php/is', $_SERVER['REQUEST_URI'])
@@ -441,6 +440,7 @@ function genPassword($len = 5)
    
    return $str;
 }
+
 /**
  * Summary of recLocalTime
  * @param mixed $table Table
@@ -522,16 +522,16 @@ function DebMes($errorMessage, $logLevel = "debug")
       SaveFile(ROOT . 'debmes/' . date('Y-m-d') . '.log', "Added " . date('Y-m-d H:i:s' . "\n"));
    }
 
-      $log = Logger::getRootLogger();
-  $log = Logger::getRootLogger();
-  $log->debug($text);
    $log = Logger::getRootLogger();
+
    if (defined('SETTINGS_LOGGER_DESTINATION'))
    {
       $errorDestination = strtolower(SETTINGS_LOGGER_DESTINATION);
+
       if ($errorDestination == "database") $log = Logger::getLogger('dblog');
       if ($errorDestination == "both") $log     = Logger::getLogger('db_and_file');
    }
+
    switch ($logLevel)
    {
       case "trace":
@@ -551,6 +551,7 @@ function DebMes($errorMessage, $logLevel = "debug")
          break;
       default:
          $log->debug($errorMessage);
+   }
 }
 
 /**
