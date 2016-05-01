@@ -40,8 +40,8 @@ error_reporting(E_ALL ^ E_NOTICE);
  Define('SERVER_ROOT', '/var/www');
 
 
- if ($_ENV["S2G_BASE_URL"]) {
-  Define('BASE_URL', $_ENV["S2G_BASE_URL"]);
+ if (getenv('VIRTUAL_HOST')) {
+  Define('BASE_URL', getenv('VIRTUAL_HOST'));
  } else {
   Define('BASE_URL', 'http://127.0.0.1:80');              // Your base URL:port (!!!)
  }

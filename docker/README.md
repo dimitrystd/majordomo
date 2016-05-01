@@ -1,6 +1,6 @@
 # Available settings
 
-* `VIRTUAL_HOST` - Will be used as `ServerName` in `/etc/apache2/sites-available/000-default.conf` and can be used by [jwilder/nginx-proxy](https://hub.docker.com/r/jwilder/nginx-proxy/)
+* `VIRTUAL_HOST` - Will be used as `ServerName` in `/etc/apache2/sites-available/000-default.conf` and by scheduled jobs (when generating URL to web server). Also it can be used by [jwilder/nginx-proxy](https://hub.docker.com/r/jwilder/nginx-proxy/)
 * `DB_HOST` - MySQL host
 * `DB_NAME` - MySQL database name
 * `DB_USER` - MySQL user name
