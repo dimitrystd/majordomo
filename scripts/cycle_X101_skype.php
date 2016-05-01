@@ -272,7 +272,7 @@ while(1)
                 }
         }
 
-   if (file_exists('./reboot') || $_GET['onetime']) 
+   if (file_exists('./reboot') || IsSet($_GET['onetime'])) 
    {
            $n    = null;
                 $dbus = null;

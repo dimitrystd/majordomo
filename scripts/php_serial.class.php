@@ -44,9 +44,9 @@ class phpSerial
 	{
 		setlocale(LC_ALL, "en_US");
 
-		$sysname = php_uname();
+		$isWindows = IsWindowsOS();
 
-		if (substr($sysname, 0, 5) === "Linux")
+		if (!$isWindows)
 		{
 			$this->_os = "linux";
 
@@ -59,7 +59,7 @@ class phpSerial
 				trigger_error("No stty availible, unable to run.", E_USER_ERROR);
 			}
 		}
-		elseif(substr($sysname, 0, 7) === "Windows")
+		elseif($isWindows)
 		{
 			$this->_os = "windows";
 			register_shutdown_function(array($this, "deviceClose"));

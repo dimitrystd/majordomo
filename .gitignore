@@ -15,3 +15,7 @@ megad-328*.hex
 *.bak
 *.sln
 *.suo
+*.phpproj.user
+.vs/
+backup/
+debmes/
