@@ -54,7 +54,7 @@ error_reporting(E_ALL ^ E_NOTICE);
  //Define('ONEWIRE_SERVER', 'tcp://localhost:8234');    // 1-wire OWFS server
 
 
- Define('HOME_NETWORK', '192.168.0.*');                  // home network (optional)
+ Define('HOME_NETWORK', '192.168.0.*,172.*.0.*,192.168.99.*'); // home and docker network (optional)
  Define('EXT_ACCESS_USERNAME', $_SERVER['EXT_ACCESS_USERNAME']);  // access details for external network (internet)
  Define('EXT_ACCESS_PASSWORD', $_SERVER['EXT_ACCESS_PASSWORD']);
 
