@@ -1,5 +1,6 @@
 # Available settings
 
+* `VIRTUAL_HOST` - Will be used as `ServerName` in `/etc/apache2/sites-available/000-default.conf` and can be used by [jwilder/nginx-proxy](https://hub.docker.com/r/jwilder/nginx-proxy/)
 * `DB_HOST` - MySQL host
 * `DB_NAME` - MySQL database name
 * `DB_USER` - MySQL user name
@@ -17,7 +18,16 @@ docker build --rm --tag=dmitriy/majordomo -f ./docker/Dockerfile ./docker
 ```
 
 ## Run as container
-
+* Run web site
 ```
-docker run -it --rm -p 80:80 -e DB_HOST=smart-home -e DB_NAME=db_terminal -e DB_USER=majordomo_sql -e DB_PASSWORD=xxx -e MAIL_USER=xxx@gmail.com -e EMAIL_PASSWORD=xxxx  dmitriy/majordomo
+docker run -it --rm -p 80:80 -e DB_HOST=<mysql_server_ip> -e DB_NAME=<db_name> -e DB_USER=<db_user> -e DB_PASSWORD=<db_pwd> -e MAIL_USER=xxx@gmail.com -e EMAIL_PASSWORD=<email_pwd> dmitriy/majordomo
+```
+* Run cycles
+```
+docker run -it --rm -e DB_HOST=<mysql_server_ip> -e DB_NAME=<db_name> -e DB_USER=<db_user> -e DB_PASSWORD=<db_pwd> -e MAIL_USER=xxx@gmail.com -e EMAIL_PASSWORD=<email_pwd> dmitriy/majordomo
+```
+
+You can map folders from container by adding to command line
+```
+-v /var/majordomo/debmes:/var/www/debmes -v /var/majordomo/backup:/var/www/backup
 ```
