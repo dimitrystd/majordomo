@@ -83,5 +83,4 @@ RUN chmod +x /start.sh
 VOLUME ["/var/www/debmes", "/var/www/backup"]
 WORKDIR /var/www
 EXPOSE 80
-#CMD ["apachectl", "-DFOREGROUND"]
 CMD ["/start.sh"]
