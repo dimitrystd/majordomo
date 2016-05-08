@@ -12,9 +12,6 @@ Define('DB_NAME', 'db_terminal');
 Define('DB_USER', 'root');
 Define('DB_PASSWORD', '');
 
-Define('GMAIL_USER', 'your_user@gmail.com');
-Define('GMAIL_PASSWORD', '');
-
 Define('DIR_TEMPLATES', "./templates/");
 Define('DIR_MODULES', "./modules/");
 Define('DEBUG_MODE', 1);
@@ -67,8 +64,6 @@ Define('PROJECT_DOMAIN', $_SERVER['SERVER_NAME']);
 
 /// (Optional)
 //Define('DROPBOX_SHOPPING_LIST', 'c:/data/dropbox/list.txt');  
-
- const WINDOWS_PHP_PATH = '..\server\php\php.exe';
 
  $restart_threads=array(
                        'cycle_execs.php', 
