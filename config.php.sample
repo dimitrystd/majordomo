@@ -74,4 +74,3 @@ Define('PROJECT_DOMAIN', $_SERVER['SERVER_NAME']);
                        'cycle_webvars.php');
 
 
-?>
