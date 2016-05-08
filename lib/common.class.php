@@ -7,6 +7,17 @@
 
 
 /**
+ * Summary of say
+ * @param mixed $ph        Phrase
+ * @param mixed $level     Level (default 0)
+ * @param mixed $member_id Member ID (default 0)
+ * @return void
+ */
+function say($ph, $level = 0, $member_id = 0)
+{
+   global $commandLine;
+   global $voicemode;
+   global $noPatternMode;
 
    $rec = array();
 
