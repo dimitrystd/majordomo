@@ -12,7 +12,7 @@ $log = getLogger(__FILE__);
 
 // Try to resolve MegaD object by IP
 $ip = $_SERVER['REMOTE_ADDR'];
-$log->trace(sprintf('Got message from MegaDevice (ip = %s, params = [%s])', $ip, 
+$log->trace(sprintf('Got message from MegaDevice (ip = %s, params = [%s])', $ip,
   implode(', ', array_map(function ($v, $k) { return $k . '=' . $v; }, $params, array_keys($params)))));
 if (empty($ip)){
   $log->error('Cannot determinate remote IP address of megadevice!');
