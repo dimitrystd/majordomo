@@ -2,8 +2,9 @@
 header('Connection: close');
 flush();
 
-require_once('config.php');
-require_once(ROOT . './lib/loader.php');
+require_once 'config.php';
+include_once ROOT . './lib/newrelic/newrelic.inc.php';
+require_once ROOT . './lib/loader.php';
 global $db;
 $db = new mysql(DB_HOST, '', DB_USER, DB_PASSWORD, DB_NAME);
 

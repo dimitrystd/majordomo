@@ -4,6 +4,7 @@
  * @version 0.1 (auto-set)
  */
 
+include_once ROOT . './lib/newrelic/newrelic.inc.php';
 DebMes("Running maintenance script");
 
 // BACKUP DATABASE AND FILES

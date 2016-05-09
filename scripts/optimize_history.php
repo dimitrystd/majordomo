@@ -6,6 +6,7 @@
 chdir('../');
 
 include_once("./config.php");
+include_once ROOT . './lib/newrelic/newrelic.inc.php';
 include_once("./lib/loader.php");
 
 // connecting to database
