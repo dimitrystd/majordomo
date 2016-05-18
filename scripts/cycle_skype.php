@@ -200,5 +200,5 @@ class _ISkypeEvents
 
 // closing database connection
 $db->Disconnect();
-
+?>
 ?>
